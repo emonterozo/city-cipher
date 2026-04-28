@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:city_cipher/core_theme.dart';
+import 'package:city_cipher/core/theme.dart';
 import 'dart:io';
 import 'dart:ui';
 
@@ -113,7 +113,7 @@ class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: CityCipherTheme.primaryRed)),
+        body: Center(child: CircularProgressIndicator(color: CityCipherTheme.primary)),
       );
     }
 
@@ -242,10 +242,10 @@ class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
                 height: 36,
                 width: 36,
                 decoration: BoxDecoration(
-                  color: CityCipherTheme.primaryRed.withOpacity(0.08),
+                  color: CityCipherTheme.primary.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.card_giftcard_rounded, color: CityCipherTheme.primaryRed, size: 18),
+                child: const Icon(Icons.card_giftcard_rounded, color: CityCipherTheme.primary, size: 18),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -305,7 +305,7 @@ class _ModernBranchCardState extends State<ModernBranchCard> {
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5)),
         ],
-        border: Border.all(color: _isExpanded ? CityCipherTheme.primaryRed.withOpacity(0.3) : Colors.black.withOpacity(0.05)),
+        border: Border.all(color: _isExpanded ? CityCipherTheme.primary.withOpacity(0.3) : Colors.black.withOpacity(0.05)),
       ),
       child: Column(
         children: [

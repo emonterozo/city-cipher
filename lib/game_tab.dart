@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'core_theme.dart';
+import 'core/theme.dart';
 import 'game_data.dart';
 
 class GameTab extends StatefulWidget {
@@ -92,7 +92,7 @@ class _GameTabState extends State<GameTab> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: CityCipherTheme.primaryRed,
+              backgroundColor: CityCipherTheme.primary,
             ),
             onPressed: () {
               setState(() => _points += 50);
@@ -336,7 +336,7 @@ class _GameTabState extends State<GameTab> {
             return Container(
               decoration: BoxDecoration(
                 color: isFound
-                    ? CityCipherTheme.primaryRed
+                    ? CityCipherTheme.primary
                     : Colors.white.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(4),
               ),
@@ -426,7 +426,7 @@ class _GameTabState extends State<GameTab> {
               const Icon(
                 Icons.stars_rounded,
                 size: 100, // Slightly larger icon
-                color: CityCipherTheme.primaryRed,
+                color: CityCipherTheme.primary,
               ),
               const SizedBox(height: 10),
               const Text(
@@ -444,7 +444,7 @@ class _GameTabState extends State<GameTab> {
                 height: 50, // Fixed height to ensure it's not "half"
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: CityCipherTheme.primaryRed,
+                    backgroundColor: CityCipherTheme.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
@@ -494,7 +494,7 @@ class WheelPainter extends CustomPainter {
     double letterRadius = size.width * 0.45;
 
     Paint linePaint = Paint()
-      ..color = CityCipherTheme.primaryRed.withOpacity(0.9)
+      ..color = CityCipherTheme.primary.withOpacity(0.9)
       ..strokeWidth = 10
       ..strokeCap = StrokeCap.round;
 
@@ -530,7 +530,7 @@ class WheelPainter extends CustomPainter {
       canvas.drawCircle(
         pts[i],
         28, // Slightly larger letter circles
-        Paint()..color = isSelected ? CityCipherTheme.primaryRed : Colors.white,
+        Paint()..color = isSelected ? CityCipherTheme.primary : Colors.white,
       );
 
       // Centered Text

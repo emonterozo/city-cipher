@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'core_theme.dart';
+import 'core/theme.dart';
 
 class RewardsTab extends StatelessWidget {
   const RewardsTab({super.key});
@@ -50,8 +50,8 @@ class RewardsTab extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: CityCipherTheme.primaryRed.withOpacity(0.1), shape: BoxShape.circle),
-                  child: const Icon(Icons.confirmation_number_rounded, color: CityCipherTheme.primaryRed),
+                  decoration: BoxDecoration(color: CityCipherTheme.primary.withOpacity(0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.confirmation_number_rounded, color: CityCipherTheme.primary),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -76,7 +76,7 @@ class RewardsTab extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () { /* Show QR or Code logic */ },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: CityCipherTheme.primaryRed,
+                    backgroundColor: CityCipherTheme.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 20),

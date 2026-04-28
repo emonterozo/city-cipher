@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'game_tab.dart';
 import 'home_tab.dart';
 import 'rewards_tab.dart';
-import 'core_theme.dart';
+import 'core/theme.dart';
 
 void main() => runApp(const CityCipherApp());
 
@@ -14,7 +15,7 @@ class CityCipherApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+        scaffoldBackgroundColor: CityCipherTheme.background,
       ),
       home: const MainNavigation(),
     );
@@ -49,7 +50,7 @@ class _MainNavigationState extends State<MainNavigation> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: CityCipherTheme.primaryRed.withValues(alpha: 0.3),
+                  color: CityCipherTheme.primary.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 5),
                 ),
@@ -57,11 +58,11 @@ class _MainNavigationState extends State<MainNavigation> {
             ),
             child: FloatingActionButton(
               onPressed: () => setState(() => _isGameActive = true),
-              backgroundColor: CityCipherTheme.primaryRed,
+              backgroundColor: CityCipherTheme.primary,
               elevation: 0,
               shape: const CircleBorder(),
               child: const Icon(
-                Icons.games_outlined,
+                LucideIcons.gamepad2,
                 color: Colors.white,
                 size: 30,
               ),
@@ -70,7 +71,7 @@ class _MainNavigationState extends State<MainNavigation> {
           bottomNavigationBar: BottomAppBar(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             height: 70,
-            color: Colors.white,
+            color: CityCipherTheme.foreground,
             shape: const CircularNotchedRectangle(),
             notchMargin: 8.0,
             child: Row(
@@ -78,14 +79,14 @@ class _MainNavigationState extends State<MainNavigation> {
               children: [
                 _buildTabItem(
                   index: 0,
-                  icon: Icons.home_outlined,
+                  icon: LucideIcons.house,
                   label: "Home",
                 ),
 
                 const SizedBox(width: 48),
                 _buildTabItem(
                   index: 1,
-                  icon: Icons.card_giftcard_outlined,
+                  icon: LucideIcons.gift,
                   label: "Rewards",
                 ),
               ],
@@ -117,15 +118,16 @@ class _MainNavigationState extends State<MainNavigation> {
         children: [
           Icon(
             icon,
-            color: isSelected ? CityCipherTheme.primaryRed : Colors.grey,
+            color: isSelected ? CityCipherTheme.primary : CityCipherTheme.mutedForeground,
             size: 28,
           ),
           const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
-              color: isSelected ? CityCipherTheme.primaryRed : Colors.grey,
+              fontFamily: "Poppins",
+              fontSize: 10,
+              color: isSelected ? CityCipherTheme.primary : CityCipherTheme.mutedForeground,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
