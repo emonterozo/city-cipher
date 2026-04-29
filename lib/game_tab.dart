@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'dart:math' as math;
 import 'core/theme.dart';
 import 'game_data.dart';
@@ -27,11 +29,15 @@ class _GameTabState extends State<GameTab> {
   List<String> _foundWords = [];
   late List<String> _shuffledLetters;
   List<Offset> _hintedOffsets = [];
+  bool _showIntro = true;
 
   @override
   void initState() {
     super.initState();
-    if (widget.isFullView) _initLevel();
+    if (widget.isFullView) {
+      _initLevel();
+      _showIntro = true;
+    }
   }
 
   void _initLevel() {
@@ -107,70 +113,82 @@ class _GameTabState extends State<GameTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.isFullView) return _buildIntro();
+    // if (_showIntro) {
+    //   return _gameIntro();
+    // }
     final level = allLevels[_currentLevelIdx];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: CityCipherTheme.background,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  LucideIcons.x,
+                  color: CityCipherTheme.foreground,
+                  size: 24,
+                ),
+                onPressed: widget.onClose,
+              ),
+              Row(
+                children: [
+                  Text(
+                    "LEVEL ${_currentLevelIdx + 1}",
+                    style: const TextStyle(
+                      fontFamily: "Poppins",
+                      color: CityCipherTheme.foreground,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Container(
+                    height: 20,
+                    width: 1,
+                    color: CityCipherTheme.border,
+                    margin: const EdgeInsets.symmetric(horizontal: 15),
+                  ),
+                  const FaIcon(
+                    FontAwesomeIcons.coins,
+                    size: 24,
+                    color: CityCipherTheme.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    "$_points",
+                    style: const TextStyle(
+                      fontFamily: "Poppins",
+                      color: CityCipherTheme.foreground,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: CityCipherTheme.background,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: CityCipherTheme.border,
+            height: 1,
+            width: double.infinity,
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            // --- UPDATED HORIZONTAL TOP BAR ---
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.03),
-                border: Border(
-                  bottom: BorderSide(color: Colors.white.withOpacity(0.05)),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70),
-                    onPressed: widget.onClose,
-                  ),
-                  // HORIZONTAL LEVEL AND POINTS
-                  Row(
-                    children: [
-                      Text(
-                        "LEVEL ${_currentLevelIdx + 1}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Container(
-                        height: 20,
-                        width: 1,
-                        color: Colors.white24,
-                        margin: const EdgeInsets.symmetric(horizontal: 15),
-                      ),
-                      const Icon(
-                        Icons.monetization_on,
-                        color: Colors.amber,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "$_points",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(
-                    width: 48,
-                  ), // Spacer to center the level/points
-                ],
-              ),
-            ),
-
             // --- GRID AREA ---
             Expanded(flex: 5, child: Center(child: _buildGrid(level))),
 
@@ -414,54 +432,112 @@ class _GameTabState extends State<GameTab> {
   String _getCurrentWord() =>
       _selectedIndices.map((i) => _shuffledLetters[i]).join("");
 
-  Widget _buildIntro() {
+  Widget _gameIntro() {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: SingleChildScrollView(
-          // Prevents cutting off on small screens
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.stars_rounded,
-                size: 100, // Slightly larger icon
-                color: CityCipherTheme.primary,
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                "CITY CIPHER",
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.black,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 40), // Increased spacing
-              SizedBox(
-                width: 200, // Fixed width so it doesn't stretch
-                height: 50, // Fixed height to ensure it's not "half"
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: CityCipherTheme.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+      backgroundColor: CityCipherTheme.background,
+      body: Stack(
+        children: [
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    LucideIcons.star,
+                    size: 100,
+                    color: CityCipherTheme.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "CITY CIPHER",
+                    style: TextStyle(
+                      fontFamily: "Poppins",
+                      fontSize: 36,
+                      fontWeight: FontWeight.w600,
+                      color: CityCipherTheme.foreground,
+                      letterSpacing: 4,
                     ),
-                    elevation: 5,
                   ),
-                  onPressed: widget.onStartGame,
-                  child: const Text(
-                    "PLAY NOW",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Decode the city's secrets and master the streets in this ultimate rewards-driven adventure.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: "Poppins",
+                      fontSize: 14,
+                      color: CityCipherTheme.mutedForeground,
+                      fontWeight: FontWeight.w600,
+                      height: 1.5,
+                    ),
                   ),
+                  const SizedBox(height: 48),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showIntro = false;
+                      });
+
+                      widget.onStartGame?.call();
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: CityCipherTheme.border.withValues(alpha: 0.5),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsetsGeometry.only(top: 12, bottom: 12),
+                        child: const Center(
+                          child: Text(
+                            "PLAY NOW",
+                            style: TextStyle(
+                              fontFamily: "Poppins",
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 16,
+            child: IconButton(
+              onPressed: widget.onClose,
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: const Icon(
+                  LucideIcons.chevronLeft,
+                  color: Colors.white,
+                  size: 24,
                 ),
               ),
-              const SizedBox(height: 20),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:city_cipher/core/theme.dart';
-import 'dart:io';
-import 'dart:ui';
-
-// --- MODELS ---
 
 class StoreSocials {
   final String? facebook;
@@ -39,14 +36,13 @@ class Branch {
   });
 }
 
-// --- SCREEN ---
-
 class PartnerStoreDetailScreen extends StatefulWidget {
   final String storeId;
   const PartnerStoreDetailScreen({super.key, required this.storeId});
 
   @override
-  State<PartnerStoreDetailScreen> createState() => _PartnerStoreDetailScreenState();
+  State<PartnerStoreDetailScreen> createState() =>
+      _PartnerStoreDetailScreenState();
 }
 
 class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
@@ -87,14 +83,36 @@ class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
             tiktok: "https://tiktok.com",
           ),
         ),
+        Branch(
+          locationName: "Caloocan City",
+          address: "123 Katipunan Ave, Quezon City",
+          latitude: 14.6327,
+          longitude: 121.0732,
+          hours: [
+            StoreHour(day: "Monday", time: "8AM - 6PM"),
+            StoreHour(day: "Tuesday", time: "8AM - 6PM"),
+            StoreHour(day: "Wednesday", time: "8AM - 6PM"),
+            StoreHour(day: "Thursday", time: "8AM - 6PM"),
+            StoreHour(day: "Friday", time: "8AM - 6PM"),
+            StoreHour(day: "Saturday", time: "9AM - 4PM"),
+            StoreHour(day: "Sunday", time: "Closed"),
+          ],
+          socials: StoreSocials(
+            facebook: "https://facebook.com",
+            instagram: "https://instagram.com",
+            tiktok: "https://tiktok.com",
+          ),
+        ),
       ];
 
       setState(() {
         storeData = {
           "name": "Red Line Detailing",
           "website": "https://redlinedetailing.com",
-          "bannerUrl": "https://images.unsplash.com/photo-1552933529-e359b2477252?q=80&w=2070&auto=format&fit=crop",
-          "description": "Premium automotive restoration and protection specialists specializing in paint correction and ceramic coatings.",
+          "bannerUrl":
+              "https://images.unsplash.com/photo-1552933529-e359b2477252?q=80&w=2070&auto=format&fit=crop",
+          "description":
+              "Premium automotive restoration and protection specialists specializing in paint correction and ceramic coatings.",
           "rewards": [
             {"title": "Full Exterior Waxing & Buffing Package", "points": 500},
             {"title": "Interior Deep Clean & Sanitation", "points": 1200},
@@ -113,37 +131,241 @@ class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: CityCipherTheme.primary)),
+        body: Center(
+          child: CircularProgressIndicator(color: CityCipherTheme.primary),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
+      backgroundColor: CityCipherTheme.background,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          _buildHeroAppBar(),
+          _buildHeroAppBar(storeData),
           SliverToBoxAdapter(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeaderSection(),
-                    const SizedBox(height: 35),
-                    _buildSectionLabel("LOCATIONS"),
-                    ...branches.map((b) => ModernBranchCard(branch: b)),
-                    const SizedBox(height: 35),
-                    _buildSectionLabel("REWARDS TEASER"),
-                    ...((storeData?['rewards'] as List?) ?? []).map((r) => _buildRewardTeaserTile(r)),
-                    const SizedBox(height: 60),
-                  ],
-                ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children:
+                    [
+                      Column(
+                        children: [
+                          Text(
+                            "Artisan coffee roasted in-house with a selection of premium hand-crafted pastries. Every cup earned gets you closer to exclusive rewards.",
+                            style: const TextStyle(
+                              fontFamily: "Poppins",
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: CityCipherTheme.mutedForeground,
+                              letterSpacing: 0.6,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
+                      GestureDetector(
+                        onTap: () => {},
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: CityCipherTheme.border.withValues(
+                                alpha: 0.5,
+                              ),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsetsGeometry.only(
+                              top: 12,
+                              bottom: 12,
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.globe,
+                                  size: 20,
+                                  color: CityCipherTheme.secondary,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Visit Website',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: "Poppins",
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      Text(
+                        "Branches",
+                        style: const TextStyle(
+                          color: CityCipherTheme.foreground,
+                          fontFamily: "Poppins",
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ] +
+                    branches.map((branch) {
+                      return BranchCard(branch: branch);
+                    }).toList() +
+                    [
+                      const SizedBox(height: 30),
+                      Text(
+                        "Rewards",
+                        style: const TextStyle(
+                          color: CityCipherTheme.foreground,
+                          fontFamily: "Poppins",
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: CityCipherTheme.border.withValues(
+                              alpha: 0.5,
+                            ),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                LucideIcons.ticketPercent,
+                                size: 45,
+                                color: CityCipherTheme.primary,
+                              ),
+                              SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "50% sample product",
+                                      style: TextStyle(
+                                        color: CityCipherTheme.foreground,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        fontFamily: "Poppins",
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      "1,500 POINTS",
+                                      style: TextStyle(
+                                        color: CityCipherTheme.primary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                        fontFamily: "Poppins",
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                LucideIcons.chevronRight,
+                                size: 25,
+                                color: CityCipherTheme.mutedForeground,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: CityCipherTheme.border.withValues(
+                              alpha: 0.5,
+                            ),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                LucideIcons.ticketPercent,
+                                size: 45,
+                                color: CityCipherTheme.primary,
+                              ),
+                              SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "50% sample product",
+                                      style: TextStyle(
+                                        color: CityCipherTheme.foreground,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        fontFamily: "Poppins",
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      "1,500 POINTS",
+                                      style: TextStyle(
+                                        color: CityCipherTheme.primary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                        fontFamily: "Poppins",
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                LucideIcons.chevronRight,
+                                size: 25,
+                                color: CityCipherTheme.mutedForeground,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 50),
+                    ],
               ),
             ),
           ),
@@ -152,252 +374,354 @@ class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
     );
   }
 
-  Widget _buildHeroAppBar() {
+  Widget _buildHeroAppBar(Map<String, dynamic>? storeData) {
+    final bannerUrl =
+        storeData?['bannerUrl'] ?? "https://example.com/fallback-banner.jpg";
+    final storeName = storeData?['name'] ?? "Brew & Co.";
+    final category = storeData?['category'] ?? "COFFEE & BAKERY";
+    final logoIcon = storeData?['logoIcon'] ?? Icons.coffee;
+
     return SliverAppBar(
-      expandedHeight: 250,
       pinned: true,
+      expandedHeight: 330,
       elevation: 0,
-      backgroundColor: Colors.white,
+      backgroundColor: CityCipherTheme.background,
       leading: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: ClipOval(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: Colors.black26,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
-                onPressed: () => Navigator.pop(context),
-              ),
+        padding: const EdgeInsets.only(left: 8.0, top: 4.0),
+        child: IconButton(
+          icon: const Icon(
+            LucideIcons.chevronLeft,
+            color: Colors.white,
+            size: 30,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8.0, top: 4.0),
+          child: IconButton(
+            icon: const Icon(
+              LucideIcons.share2,
+              color: CityCipherTheme.foreground,
+              size: 30,
             ),
+            onPressed: () {},
           ),
         ),
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        background: Image.network(storeData?['bannerUrl'] ?? "", fit: BoxFit.cover),
-      ),
-    );
-  }
-
-  Widget _buildHeaderSection() {
-    final String? website = storeData?['website'];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Text(
-                (storeData?['name'] ?? "").toUpperCase(),
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -1),
-              ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16.0, top: 4.0),
+          child: IconButton(
+            icon: const Icon(
+              LucideIcons.heart,
+              color: CityCipherTheme.primary,
+              size: 30,
             ),
-            if (website != null)
-              IconButton(
-                onPressed: () => _launchUrl(website),
-                icon: const Icon(Icons.public, color: Colors.black54),
-                tooltip: "Visit Website",
-              ),
-          ],
-        ),
-       
-        Text(
-          storeData?['description'] ?? "",
-          style: TextStyle(fontSize: 15, color: Colors.black.withOpacity(0.6), height: 1.5),
+            onPressed: () {},
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSectionLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 2, color: Colors.black38),
-      ),
-    );
-  }
-
-  Widget _buildRewardTeaserTile(Map<String, dynamic> reward) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () {
-          // TODO: Navigator.push(context, MaterialPageRoute(builder: (context) => RewardsListScreen()));
-          debugPrint("Redirecting to Rewards Details for: ${reward['title']}");
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.black.withOpacity(0.05)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                height: 36,
-                width: 36,
-                decoration: BoxDecoration(
-                  color: CityCipherTheme.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.card_giftcard_rounded, color: CityCipherTheme.primary, size: 18),
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Image.network(bannerUrl, fit: BoxFit.cover),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 80,
+              child: Container(
+                color: CityCipherTheme.background,
+                padding: const EdgeInsets.only(left: 125, right: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      reward['title'] ?? "",
+                      storeName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: "Poppins",
+                        letterSpacing: -0.5,
+                        height: 1.1,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      category.toUpperCase(),
+                      style: const TextStyle(
+                        color: CityCipherTheme.secondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: "Poppins",
+                        letterSpacing: 0.8,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                    ),
-                    Text(
-                      "${reward['points'] ?? 0} Points",
-                      style: TextStyle(color: Colors.black.withOpacity(0.4), fontWeight: FontWeight.w600, fontSize: 11),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.black.withOpacity(0.2)),
-            ],
-          ),
+            ),
+            Positioned(
+              bottom: 20,
+              left: 16,
+              child: Container(
+                height: 100,
+                width: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF131A26),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.network(
+                      'https://i.ibb.co/bjG1JGxn/Gemini-Generated-Image-ggwrmdggwrmdggwr.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          LucideIcons.store,
+                          size: 40,
+                          color: CityCipherTheme.mutedForeground,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-
-  Future<void> _launchUrl(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      debugPrint("Could not launch $url");
-    }
-  }
 }
 
-// --- BRANCH CARD COMPONENT ---
-
-class ModernBranchCard extends StatefulWidget {
+class BranchCard extends StatefulWidget {
   final Branch branch;
-  const ModernBranchCard({super.key, required this.branch});
+
+  const BranchCard({super.key, required this.branch});
 
   @override
-  State<ModernBranchCard> createState() => _ModernBranchCardState();
+  State<BranchCard> createState() => _BranchCardState();
 }
 
-class _ModernBranchCardState extends State<ModernBranchCard> {
-  bool _isExpanded = false;
+class _BranchCardState extends State<BranchCard> {
+  bool showHours = false;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5)),
-        ],
-        border: Border.all(color: _isExpanded ? CityCipherTheme.primary.withOpacity(0.3) : Colors.black.withOpacity(0.05)),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(child: Text(widget.branch.locationName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17))),
-                    _buildSocials(widget.branch.socials),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () => _openMap(widget.branch.latitude, widget.branch.longitude),
-                  child: Text(
-                    widget.branch.address,
-                    style: const TextStyle(color: Colors.blueAccent, fontSize: 13, decoration: TextDecoration.underline),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                InkWell(
-                  onTap: () => setState(() => _isExpanded = !_isExpanded),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("VIEW STORE HOURS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black45)),
-                      Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, size: 16, color: Colors.black26),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          AnimatedCrossFade(
-            firstChild: const SizedBox(width: double.infinity),
-            secondChild: _buildHoursList(),
-            crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 300),
-          ),
-        ],
-      ),
-    );
-  }
+    final branch = widget.branch;
 
-  Widget _buildHoursList() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      child: Column(
-        children: [
-          const Divider(),
-          const SizedBox(height: 10),
-          ...widget.branch.hours.map((h) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Row(
+      width: double.infinity,
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: CityCipherTheme.border.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(h.day, style: const TextStyle(fontSize: 12, color: Colors.black87)),
-                Text(h.time, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: h.time.toLowerCase().contains("closed") ? Colors.red : Colors.black54)),
+                Expanded(
+                  child: Text(
+                    branch.locationName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: "Poppins",
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Row(
+                  children: [
+                    if (branch.socials.facebook != null)
+                      const FaIcon(
+                        FontAwesomeIcons.facebook,
+                        size: 19,
+                        color: CityCipherTheme.mutedForeground,
+                      ),
+                    const SizedBox(width: 12),
+                    if (branch.socials.instagram != null)
+                      const FaIcon(
+                        FontAwesomeIcons.instagram,
+                        size: 19,
+                        color: CityCipherTheme.mutedForeground,
+                      ),
+                    const SizedBox(width: 12),
+                    if (branch.socials.tiktok != null)
+                      const FaIcon(
+                        FontAwesomeIcons.tiktok,
+                        size: 19,
+                        color: CityCipherTheme.mutedForeground,
+                      ),
+                  ],
+                ),
               ],
             ),
-          )),
-        ],
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () {
+                print("Opening Maps...");
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    LucideIcons.mapPin,
+                    size: 18,
+                    color: CityCipherTheme.secondary,
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.only(bottom: 1),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: CityCipherTheme.secondary,
+                              width: 0.8,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          branch.address,
+                          style: const TextStyle(
+                            color: CityCipherTheme.secondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: "Poppins",
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  showHours = !showHours;
+                });
+              },
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Icon(
+                          LucideIcons.clock,
+                          size: 18,
+                          color: CityCipherTheme.primary,
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            "Open until 9:00 PM",
+                            style: const TextStyle(
+                              color: CityCipherTheme.mutedForeground,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: "Poppins",
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    showHours ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                    size: 18,
+                    color: CityCipherTheme.mutedForeground,
+                  ),
+                ],
+              ),
+            ),
+            if (showHours) ...[
+              const SizedBox(height: 10),
+              Divider(color: CityCipherTheme.border, thickness: 1),
+              const SizedBox(height: 10),
+              Column(
+                children: branch.hours.map((h) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          h.day,
+                          style: const TextStyle(
+                            color: CityCipherTheme.mutedForeground,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: "Poppins",
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          h.time,
+                          style: const TextStyle(
+                            color: CityCipherTheme.foreground,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: "Poppins",
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ],
+        ),
       ),
     );
-  }
-
-  Widget _buildSocials(StoreSocials socials) {
-    return Row(
-      children: [
-        if (socials.facebook != null) _socialIcon(Icons.facebook, socials.facebook!, const Color(0xFF1877F2)),
-        if (socials.instagram != null) _socialIcon(Icons.camera_alt_rounded, socials.instagram!, const Color(0xFFE4405F)),
-        if (socials.tiktok != null) _socialIcon(Icons.music_note_rounded, socials.tiktok!, Colors.black),
-      ],
-    );
-  }
-
-  Widget _socialIcon(IconData icon, String url, Color color) {
-    return GestureDetector(
-      onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
-      child: Padding(
-        padding: const EdgeInsets.only(left: 12),
-        child: Icon(icon, size: 20, color: color),
-      ),
-    );
-  }
-
-  Future<void> _openMap(double lat, double lng) async {
-    Uri uri = Platform.isIOS ? Uri.parse('apple_maps://?q=$lat,$lng') : Uri.parse('geo:$lat,$lng?q=$lat,$lng');
-    if (!await launchUrl(uri)) debugPrint("Could not launch maps");
   }
 }

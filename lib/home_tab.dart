@@ -208,7 +208,7 @@ class _HomeTabState extends State<HomeTab> {
                         color: CityCipherTheme.mutedForeground,
                         fontFamily: "Poppins",
                         fontWeight: FontWeight.w500,
-                        fontSize: 16,
+                        fontSize: 12,
                         letterSpacing: 1.1,
                       ),
                     ),
@@ -219,7 +219,7 @@ class _HomeTabState extends State<HomeTab> {
                         color: CityCipherTheme.primary,
                         fontFamily: "Poppins",
                         fontWeight: FontWeight.w700,
-                        fontSize: 35,
+                        fontSize: 40,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -274,7 +274,7 @@ class _HomeTabState extends State<HomeTab> {
               VerticalDivider(
                 color: CityCipherTheme.border,
                 thickness: 2,
-                indent: 10, // Reduced indent since parent has padding
+                indent: 10,
                 endIndent: 10,
               ),
 
