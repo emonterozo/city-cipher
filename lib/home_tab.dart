@@ -1,8 +1,13 @@
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
+import 'core/state/app_state.dart';
+import 'models/promotion/promotion_model.dart';
+import 'models/store/store_model.dart';
 import 'partner_store_detail_screen.dart';
 import 'core/theme.dart';
 import 'core/app_typography.dart';
+import 'services/api_service.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -12,23 +17,68 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
+  final ApiService apiService = ApiService();
+  List<Promotion> promotions = [];
+  AppState promotionState = AppState.loading;
+
+  List<Store> stores = [];
+  AppState storeState = AppState.loading;
+
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<Map<String, dynamic>> _featuredDeals = [
-    {
-      "imageUrl":
-          "https://i.ibb.co/1GhGJ01R/campbell-3-ZUs-NJhi-Ik-unsplash.jpg",
-    },
-    {
-      "imageUrl":
-          "https://i.ibb.co/yms5VmZF/alexander-schimmeck-o-M-Sb-HRa-DMQ-unsplash.jpg",
-    },
-    {
-      "imageUrl":
-          "https://i.ibb.co/XfTmGbWC/bruce-mars-g-Jt-Dg6-Wf-Ml-Q-unsplash.jpg",
-    },
-  ];
+  Future<void> fetchPromotions() async {
+    setState(() {
+      promotionState = AppState.loading;
+    });
+
+    try {
+      final response = await apiService.getPromotions();
+
+      setState(() {
+        if (response.success) {
+          promotions = response.data;
+          promotionState = AppState.loaded;
+        } else {
+          promotionState = AppState.error;
+        }
+      });
+    } catch (e) {
+      setState(() {
+        promotionState = AppState.error;
+      });
+    }
+  }
+
+  Future<void> fetchStores() async {
+    setState(() {
+      storeState = AppState.loading;
+    });
+
+    try {
+      final response = await apiService.getStores(limit: 4);
+
+      setState(() {
+        if (response.success) {
+          stores = response.data;
+          storeState = AppState.loaded;
+        } else {
+          storeState = AppState.error;
+        }
+      });
+    } catch (e) {
+      setState(() {
+        storeState = AppState.error;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchPromotions();
+    fetchStores();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,18 +104,110 @@ class _HomeTabState extends State<HomeTab> {
             children: [
               SizedBox(
                 height: 200,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: _featuredDeals.length,
-                  onPageChanged: (int page) {
-                    setState(() {
-                      _currentPage = page;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: _promoBanner(_featuredDeals[index]),
+                child: Builder(
+                  builder: (context) {
+                    if (promotionState == AppState.loading) {
+                      return Shimmer.fromColors(
+                        baseColor: CityCipherTheme.background,
+                        highlightColor: CityCipherTheme.primary,
+                        child: Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    if (promotionState == AppState.error) {
+                      return Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Something went wrong.\nPlease try again.",
+                                style: TextStyle(
+                                  fontFamily: "Poppins",
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: CityCipherTheme.mutedForeground,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 13),
+                              TextButton(
+                                onPressed: fetchPromotions,
+                                style: TextButton.styleFrom(
+                                  backgroundColor: CityCipherTheme.primary,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 70,
+                                  ),
+                                ),
+                                child: Text(
+                                  "Try again",
+                                  style: TextStyle(
+                                    fontFamily: "Poppins",
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: CityCipherTheme.background,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    if (promotions.isEmpty) {
+                      return SizedBox(
+                        width: double.infinity,
+                        child: _promoBanner(
+                          Promotion(
+                            id: "1",
+                            label: "No promo",
+                            title: "No available promo",
+                            banner:
+                                "https://i.ibb.co/rKgCNqhq/Gemini-Generated-Image-j8zca1j8zca1j8zc.png",
+                            url: "",
+                          ),
+                        ),
+                      );
+                    }
+
+                    return PageView.builder(
+                      controller: _pageController,
+                      itemCount: promotions.length,
+                      onPageChanged: (int page) {
+                        setState(() {
+                          _currentPage = page;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        return _promoBanner(promotions[index]);
+                      },
                     );
                   },
                 ),
@@ -74,7 +216,7 @@ class _HomeTabState extends State<HomeTab> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
-                  _featuredDeals.length,
+                  promotions.length,
                   (index) => AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -326,7 +468,7 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _promoBanner(Map<String, dynamic> deal) {
+  Widget _promoBanner(Promotion promotion) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -344,7 +486,7 @@ class _HomeTabState extends State<HomeTab> {
           children: [
             Positioned.fill(
               child: Image.network(
-                deal['imageUrl'] as String,
+                promotion.banner,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -409,8 +551,8 @@ class _HomeTabState extends State<HomeTab> {
                       color: CityCipherTheme.primary,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text(
-                      "LIMITED",
+                    child: Text(
+                      promotion.label.toUpperCase(),
                       style: TextStyle(
                         fontFamily: "Poppins",
                         color: CityCipherTheme.primaryForeground,
@@ -422,7 +564,7 @@ class _HomeTabState extends State<HomeTab> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    deal['title'] ?? "Special Promotion",
+                    promotion.title,
                     style: const TextStyle(
                       color: Colors.white,
                       fontFamily: "Poppins",
@@ -440,36 +582,6 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _storeGrid() {
-    final stores = [
-      {
-        "name": "Red Line Detailing & Auto Spa",
-        "logo":
-            "https://i.ibb.co/bjG1JGxn/Gemini-Generated-Image-ggwrmdggwrmdggwr.png",
-        "badge": "2× pts today",
-        "active": true,
-      },
-      {
-        "name": "Apex Fitness",
-        "logo":
-            "https://i.ibb.co/Z1dgTL7c/Gemini-Generated-Image-oqc5oqc5oqc5oqc5.png",
-        "badge": "New deal",
-        "active": false,
-      },
-      {
-        "name": "Volt Electric Bikes",
-        "logo":
-            "https://i.ibb.co/KpxSRmNM/Gemini-Generated-Image-wdgwlswdgwlswdgw.png",
-        "badge": "Always on",
-        "active": null,
-      },
-      {
-        "name": "Luxe Detailing Studio Garage",
-        "logo":
-            "https://i.ibb.co/xqcVQQM0/Gemini-Generated-Image-wq0uolwq0uolwq0u.png",
-        "badge": "3× pts weekend",
-        "active": true,
-      },
-    ];
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -481,13 +593,13 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _storeCard(BuildContext context, Map<String, dynamic> store) {
+  Widget _storeCard(BuildContext context, Store store) {
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PartnerStoreDetailScreen(storeId: "store123"),
+            builder: (context) => PartnerStoreDetailScreen(storeId: store.id),
           ),
         );
       },
@@ -523,8 +635,17 @@ class _HomeTabState extends State<HomeTab> {
                   ),
                   child: ClipOval(
                     child: Image.network(
-                      store['logo'] as String,
+                      store.logo,
                       fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+
+                        return Icon(
+                          LucideIcons.store,
+                          size: 40,
+                          color: CityCipherTheme.mutedForeground,
+                        );
+                      },
                       errorBuilder: (context, error, stackTrace) {
                         return const Icon(
                           LucideIcons.store,
@@ -545,7 +666,7 @@ class _HomeTabState extends State<HomeTab> {
                     Expanded(
                       child: Center(
                         child: Text(
-                          (store['name'] as String),
+                          store.name,
                           style: const TextStyle(
                             fontFamily: "Poppins",
                             fontSize: 14,
