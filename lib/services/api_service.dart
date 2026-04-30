@@ -55,4 +55,16 @@ class ApiService {
 
     return StoreResponse.fromJson(jsonData);
   }
+
+  Future<StoreSingleResponse> getStoreDetails(String id) async {
+    final url = Uri.parse(
+      "$baseUrl/api/stores/$id",
+    );
+
+    final response = await http.get(url, headers: _headers);
+
+    final jsonData = jsonDecode(response.body);
+
+    return StoreSingleResponse.fromJson(jsonData);
+  }
 }

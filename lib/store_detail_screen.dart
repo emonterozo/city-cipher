@@ -1,135 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:city_cipher/core/theme.dart';
+import 'core/link_service.dart';
+import 'core/state/app_state.dart';
+import 'core/utils/time_utils.dart';
+import 'models/store/store_model.dart';
+import 'services/api_service.dart';
 
-class StoreSocials {
-  final String? facebook;
-  final String? instagram;
-  final String? tiktok;
-
-  StoreSocials({this.facebook, this.instagram, this.tiktok});
-}
-
-class StoreHour {
-  final String day;
-  final String time;
-
-  StoreHour({required this.day, required this.time});
-}
-
-class Branch {
-  final String locationName;
-  final String address;
-  final double latitude;
-  final double longitude;
-  final List<StoreHour> hours;
-  final StoreSocials socials;
-
-  Branch({
-    required this.locationName,
-    required this.address,
-    required this.latitude,
-    required this.longitude,
-    required this.hours,
-    required this.socials,
-  });
-}
-
-class PartnerStoreDetailScreen extends StatefulWidget {
+class StoreDetailScreen extends StatefulWidget {
   final String storeId;
-  const PartnerStoreDetailScreen({super.key, required this.storeId});
+  const StoreDetailScreen({super.key, required this.storeId});
 
   @override
-  State<PartnerStoreDetailScreen> createState() =>
-      _PartnerStoreDetailScreenState();
+  State<StoreDetailScreen> createState() => _StoreDetailScreenState();
 }
 
-class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
-  Map<String, dynamic>? storeData;
-  List<Branch> branches = [];
-  bool isLoading = true;
+class _StoreDetailScreenState extends State<StoreDetailScreen> {
+  final ApiService apiService = ApiService();
+  Store? store;
+  AppState storeState = AppState.loading;
 
   @override
   void initState() {
     super.initState();
-    _fetchStoreDetails();
+    fetchStoreDetails();
   }
 
-  Future<void> _fetchStoreDetails() async {
-    try {
-      setState(() => isLoading = true);
-      // Simulate API Latency
-      await Future.delayed(const Duration(milliseconds: 800));
+  Future<void> fetchStoreDetails() async {
+    setState(() {
+      storeState = AppState.loading;
+    });
 
-      final mockBranches = [
-        Branch(
-          locationName: "Quezon City HQ",
-          address: "123 Katipunan Ave, Quezon City",
-          latitude: 14.6327,
-          longitude: 121.0732,
-          hours: [
-            StoreHour(day: "Monday", time: "8AM - 6PM"),
-            StoreHour(day: "Tuesday", time: "8AM - 6PM"),
-            StoreHour(day: "Wednesday", time: "8AM - 6PM"),
-            StoreHour(day: "Thursday", time: "8AM - 6PM"),
-            StoreHour(day: "Friday", time: "8AM - 6PM"),
-            StoreHour(day: "Saturday", time: "9AM - 4PM"),
-            StoreHour(day: "Sunday", time: "Closed"),
-          ],
-          socials: StoreSocials(
-            facebook: "https://facebook.com",
-            instagram: "https://instagram.com",
-            tiktok: "https://tiktok.com",
-          ),
-        ),
-        Branch(
-          locationName: "Caloocan City",
-          address: "123 Katipunan Ave, Quezon City",
-          latitude: 14.6327,
-          longitude: 121.0732,
-          hours: [
-            StoreHour(day: "Monday", time: "8AM - 6PM"),
-            StoreHour(day: "Tuesday", time: "8AM - 6PM"),
-            StoreHour(day: "Wednesday", time: "8AM - 6PM"),
-            StoreHour(day: "Thursday", time: "8AM - 6PM"),
-            StoreHour(day: "Friday", time: "8AM - 6PM"),
-            StoreHour(day: "Saturday", time: "9AM - 4PM"),
-            StoreHour(day: "Sunday", time: "Closed"),
-          ],
-          socials: StoreSocials(
-            facebook: "https://facebook.com",
-            instagram: "https://instagram.com",
-            tiktok: "https://tiktok.com",
-          ),
-        ),
-      ];
+    try {
+      final response = await apiService.getStoreDetails(widget.storeId);
 
       setState(() {
-        storeData = {
-          "name": "Red Line Detailing",
-          "website": "https://redlinedetailing.com",
-          "bannerUrl":
-              "https://images.unsplash.com/photo-1552933529-e359b2477252?q=80&w=2070&auto=format&fit=crop",
-          "description":
-              "Premium automotive restoration and protection specialists specializing in paint correction and ceramic coatings.",
-          "rewards": [
-            {"title": "Full Exterior Waxing & Buffing Package", "points": 500},
-            {"title": "Interior Deep Clean & Sanitation", "points": 1200},
-            {"title": "Engine Bay Degreasing", "points": 800},
-          ],
-        };
-        branches = mockBranches;
-        isLoading = false;
+        if (response.success) {
+          store = response.data;
+          storeState = AppState.loaded;
+        } else {
+          storeState = AppState.error;
+        }
       });
     } catch (e) {
-      setState(() => isLoading = false);
+      setState(() {
+        storeState = AppState.error;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
+    if (storeState == AppState.loading) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: CityCipherTheme.primary),
@@ -142,7 +66,7 @@ class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          _buildHeroAppBar(storeData),
+          _buildHeroAppBar(store),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
@@ -153,7 +77,7 @@ class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
                       Column(
                         children: [
                           Text(
-                            "Artisan coffee roasted in-house with a selection of premium hand-crafted pastries. Every cup earned gets you closer to exclusive rewards.",
+                            store?.description ?? '',
                             style: const TextStyle(
                               fontFamily: "Poppins",
                               fontSize: 14,
@@ -166,54 +90,59 @@ class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 30),
-                      GestureDetector(
-                        onTap: () => {},
-                        child: Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-                            ),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: CityCipherTheme.border.withValues(
-                                alpha: 0.5,
+                      if (store?.website != null &&
+                          store!.website!.isNotEmpty) ...[
+                        GestureDetector(
+                          onTap: () => {
+                            LinkService.openUrl(store?.website ?? ''),
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
                               ),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsetsGeometry.only(
-                              top: 12,
-                              bottom: 12,
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  LucideIcons.globe,
-                                  size: 20,
-                                  color: CityCipherTheme.secondary,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: CityCipherTheme.border.withValues(
+                                  alpha: 0.5,
                                 ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Visit Website',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: "Poppins",
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsetsGeometry.only(
+                                top: 12,
+                                bottom: 12,
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    LucideIcons.globe,
+                                    size: 20,
+                                    color: CityCipherTheme.secondary,
                                   ),
-                                ),
-                              ],
+                                  SizedBox(width: 10),
+                                  Text(
+                                    'Visit Website',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: "Poppins",
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 30),
+                        const SizedBox(height: 30),
+                      ],
                       Text(
                         "Branches",
                         style: const TextStyle(
@@ -225,9 +154,9 @@ class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
                       ),
                       const SizedBox(height: 20),
                     ] +
-                    branches.map((branch) {
-                      return BranchCard(branch: branch);
-                    }).toList() +
+                    (store?.branches ?? [])
+                        .map((branch) => BranchCard(branch: branch))
+                        .toList() +
                     [
                       const SizedBox(height: 30),
                       Text(
@@ -374,145 +303,233 @@ class _PartnerStoreDetailScreenState extends State<PartnerStoreDetailScreen> {
     );
   }
 
-  Widget _buildHeroAppBar(Map<String, dynamic>? storeData) {
-    final bannerUrl =
-        storeData?['bannerUrl'] ?? "https://example.com/fallback-banner.jpg";
-    final storeName = storeData?['name'] ?? "Brew & Co.";
-    final category = storeData?['category'] ?? "COFFEE & BAKERY";
-    final logoIcon = storeData?['logoIcon'] ?? Icons.coffee;
+  Widget _buildHeroAppBar(Store? store) {
+    if (store == null) {
+      return const SliverAppBar(
+        expandedHeight: 330,
+        backgroundColor: CityCipherTheme.background,
+        flexibleSpace: Center(child: CircularProgressIndicator()),
+      );
+    }
+    final PageController controller = PageController();
+    int currentIndex = 0;
 
-    return SliverAppBar(
-      pinned: true,
-      expandedHeight: 330,
-      elevation: 0,
-      backgroundColor: CityCipherTheme.background,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 8.0, top: 4.0),
-        child: IconButton(
-          icon: const Icon(
-            LucideIcons.chevronLeft,
-            color: Colors.white,
-            size: 30,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8.0, top: 4.0),
-          child: IconButton(
-            icon: const Icon(
-              LucideIcons.share2,
-              color: CityCipherTheme.foreground,
-              size: 30,
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return SliverAppBar(
+          pinned: true,
+          expandedHeight: 330,
+          elevation: 0,
+          backgroundColor: CityCipherTheme.background,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 8.0, top: 4.0),
+            child: IconButton(
+              icon: const Icon(
+                LucideIcons.chevronLeft,
+                color: Colors.white,
+                size: 30,
+              ),
+              onPressed: () => Navigator.pop(context),
             ),
-            onPressed: () {},
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 16.0, top: 4.0),
-          child: IconButton(
-            icon: const Icon(
-              LucideIcons.heart,
-              color: CityCipherTheme.primary,
-              size: 30,
-            ),
-            onPressed: () {},
-          ),
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: Image.network(bannerUrl, fit: BoxFit.cover),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0, top: 4.0),
+              child: IconButton(
+                icon: const Icon(
+                  LucideIcons.share2,
+                  color: CityCipherTheme.foreground,
+                  size: 30,
+                ),
+                onPressed: () {},
               ),
             ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 80,
-              child: Container(
-                color: CityCipherTheme.background,
-                padding: const EdgeInsets.only(left: 125, right: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      storeName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: "Poppins",
-                        letterSpacing: -0.5,
-                        height: 1.1,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      category.toUpperCase(),
-                      style: const TextStyle(
-                        color: CityCipherTheme.secondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: "Poppins",
-                        letterSpacing: 0.8,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0, top: 4.0),
+              child: IconButton(
+                icon: const Icon(
+                  LucideIcons.heart,
+                  color: CityCipherTheme.primary,
+                  size: 30,
                 ),
-              ),
-            ),
-            Positioned(
-              bottom: 20,
-              left: 16,
-              child: Container(
-                height: 100,
-                width: 100,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF131A26),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.network(
-                      'https://i.ibb.co/bjG1JGxn/Gemini-Generated-Image-ggwrmdggwrmdggwr.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          LucideIcons.store,
-                          size: 40,
-                          color: CityCipherTheme.mutedForeground,
-                        );
-                      },
-                    ),
-                  ),
-                ),
+                onPressed: () {},
               ),
             ),
           ],
-        ),
-      ),
+          flexibleSpace: FlexibleSpaceBar(
+            background: Stack(
+              children: [
+                Positioned.fill(
+                  child: PageView.builder(
+                    controller: controller,
+                    itemCount: store.images.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        currentIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final img = store.images[index];
+
+                      return GestureDetector(
+                        onTap: () {
+                          _openFullScreenGallery(store, index);
+                        },
+                        child: Image.network(
+                          img,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                Positioned(
+                  bottom: 100,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(store.images.length, (i) {
+                      final isActive = i == currentIndex;
+
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: isActive ? 16 : 8,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? CityCipherTheme.primary
+                              : CityCipherTheme.foreground.withValues(
+                                  alpha: 0.3,
+                                ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 80,
+                  child: Container(
+                    color: CityCipherTheme.background,
+                    padding: const EdgeInsets.only(left: 125, right: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          store.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: "Poppins",
+                            letterSpacing: -0.5,
+                            height: 1.1,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          store.category.toUpperCase(),
+                          style: const TextStyle(
+                            color: CityCipherTheme.secondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: "Poppins",
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                Positioned(
+                  bottom: 20,
+                  left: 16,
+                  child: Container(
+                    height: 100,
+                    width: 100,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF131A26),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.network(store.logo, fit: BoxFit.cover),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openFullScreenGallery(Store store, int initialIndex) {
+    int index = initialIndex;
+
+    showDialog(
+      context: context,
+      barrierColor: CityCipherTheme.background,
+      builder: (_) {
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            systemNavigationBarColor: CityCipherTheme.background,
+            statusBarIconBrightness: Brightness.light,
+            systemNavigationBarIconBrightness: Brightness.light,
+          ),
+          child: Scaffold(
+            backgroundColor: CityCipherTheme.background,
+            body: Stack(
+              children: [
+                PageView.builder(
+                  controller: PageController(initialPage: index),
+                  onPageChanged: (i) {
+                    index = i;
+                  },
+                  itemCount: store.images.length,
+                  itemBuilder: (context, i) {
+                    return Center(child: Image.network(store.images[i]));
+                  },
+                ),
+                Positioned(
+                  top: 40,
+                  right: 16,
+                  child: SafeArea(
+                    child: IconButton(
+                      icon: const Icon(
+                        LucideIcons.x,
+                        color: CityCipherTheme.foreground,
+                        size: 30,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -532,6 +549,7 @@ class _BranchCardState extends State<BranchCard> {
   @override
   Widget build(BuildContext context) {
     final branch = widget.branch;
+    final coordinates = branch.location.coordinates;
 
     return Container(
       width: double.infinity,
@@ -557,7 +575,7 @@ class _BranchCardState extends State<BranchCard> {
               children: [
                 Expanded(
                   child: Text(
-                    branch.locationName,
+                    branch.address,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -569,35 +587,37 @@ class _BranchCardState extends State<BranchCard> {
                   ),
                 ),
                 Row(
-                  children: [
-                    if (branch.socials.facebook != null)
-                      const FaIcon(
-                        FontAwesomeIcons.facebook,
-                        size: 19,
-                        color: CityCipherTheme.mutedForeground,
+                  children: branch.socials.map((s) {
+                    const socialIcons = {
+                      "facebook": FontAwesomeIcons.facebook,
+                      "instagram": FontAwesomeIcons.instagram,
+                      "tiktok": FontAwesomeIcons.tiktok,
+                    };
+                    final icon = socialIcons[s.social];
+
+                    if (icon == null) return const SizedBox();
+
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: InkWell(
+                        onTap: () {
+                          LinkService.openUrl(s.url);
+                        },
+                        child: FaIcon(
+                          icon,
+                          size: 19,
+                          color: CityCipherTheme.mutedForeground,
+                        ),
                       ),
-                    const SizedBox(width: 12),
-                    if (branch.socials.instagram != null)
-                      const FaIcon(
-                        FontAwesomeIcons.instagram,
-                        size: 19,
-                        color: CityCipherTheme.mutedForeground,
-                      ),
-                    const SizedBox(width: 12),
-                    if (branch.socials.tiktok != null)
-                      const FaIcon(
-                        FontAwesomeIcons.tiktok,
-                        size: 19,
-                        color: CityCipherTheme.mutedForeground,
-                      ),
-                  ],
+                    );
+                  }).toList(),
                 ),
               ],
             ),
             const SizedBox(height: 10),
             InkWell(
               onTap: () {
-                print("Opening Maps...");
+                LinkService.openMaps(coordinates[1], coordinates[0]);
               },
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -658,7 +678,7 @@ class _BranchCardState extends State<BranchCard> {
                         const SizedBox(width: 5),
                         Expanded(
                           child: Text(
-                            "Open until 9:00 PM",
+                            TimeUtils.getStatus(branch.openingHours),
                             style: const TextStyle(
                               color: CityCipherTheme.mutedForeground,
                               fontSize: 14,
@@ -685,14 +705,14 @@ class _BranchCardState extends State<BranchCard> {
               Divider(color: CityCipherTheme.border, thickness: 1),
               const SizedBox(height: 10),
               Column(
-                children: branch.hours.map((h) {
+                children: branch.openingHours.map((h) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          h.day,
+                          h.day.toUpperCase(),
                           style: const TextStyle(
                             color: CityCipherTheme.mutedForeground,
                             fontSize: 14,
@@ -703,7 +723,7 @@ class _BranchCardState extends State<BranchCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          h.time,
+                          "${TimeUtils.formatTime(h.open)} - ${TimeUtils.formatTime(h.close)}",
                           style: const TextStyle(
                             color: CityCipherTheme.foreground,
                             fontSize: 14,

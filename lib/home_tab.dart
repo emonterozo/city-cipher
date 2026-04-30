@@ -1,10 +1,11 @@
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'core/link_service.dart';
 import 'core/state/app_state.dart';
 import 'models/promotion/promotion_model.dart';
 import 'models/store/store_model.dart';
-import 'partner_store_detail_screen.dart';
+import 'store_detail_screen.dart';
 import 'core/theme.dart';
 import 'core/app_typography.dart';
 import 'services/api_service.dart';
@@ -536,6 +537,40 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
             ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: InkWell(
+                onTap: () {
+                  LinkService.openUrl(promotion.url);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: CityCipherTheme.background.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    children: [
+                      Text(
+                        "Learn More",
+                        style: TextStyle(
+                          color: CityCipherTheme.foreground,
+                          fontFamily: "Poppins",
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(width: 2),
+                      Icon(LucideIcons.chevronRight, color: CityCipherTheme.foreground, size: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 0, 0, 10),
               child: Column(
@@ -599,7 +634,7 @@ class _HomeTabState extends State<HomeTab> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PartnerStoreDetailScreen(storeId: store.id),
+            builder: (context) => StoreDetailScreen(storeId: store.id),
           ),
         );
       },

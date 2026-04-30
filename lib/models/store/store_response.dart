@@ -22,3 +22,17 @@ class StoreResponse {
     );
   }
 }
+
+class StoreSingleResponse {
+  final bool success;
+  final Store data;
+
+  StoreSingleResponse({required this.success, required this.data});
+
+  factory StoreSingleResponse.fromJson(Map<String, dynamic> json) {
+    return StoreSingleResponse(
+      success: json['success'] ?? false,
+      data: Store.fromJson(json['data'] ?? {}),
+    );
+  }
+}
