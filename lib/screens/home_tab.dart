@@ -1,14 +1,17 @@
+import 'package:city_cipher/screens/store_list_screen.dart';
+import 'package:city_cipher/shared/widgets/store_card.dart';
+import 'package:city_cipher/shared/widgets/store_card_loading_grid.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import 'core/link_service.dart';
-import 'core/state/app_state.dart';
-import 'models/promotion/promotion_model.dart';
-import 'models/store/store_model.dart';
-import 'store_detail_screen.dart';
-import 'core/theme.dart';
-import 'core/app_typography.dart';
-import 'services/api_service.dart';
+import '../core/link_service.dart';
+import '../core/state/app_state.dart';
+import '../models/promotion/promotion_model.dart';
+import '../models/store/store_model.dart';
+import '../core/theme.dart';
+import '../core/app_typography.dart';
+import '../services/api_service.dart';
+import '../shared/widgets/error_state_view.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -248,7 +251,12 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
               TextButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => StoreListScreen()),
+                  );
+                },
                 iconAlignment: IconAlignment.end,
                 icon: const Icon(
                   LucideIcons.chevronRight,
@@ -273,8 +281,15 @@ class _HomeTabState extends State<HomeTab> {
             ],
           ),
           const SizedBox(height: 20),
-          _storeGrid(),
-          const SizedBox(height: 50),
+          if (storeState == AppState.loading) StoreCardLoadingGrid(),
+          if (storeState == AppState.error) ...[
+            ErrorStateView(onRetry: fetchStores),
+            const SizedBox(height: 150),
+          ],
+          if (storeState == AppState.loaded) ...[
+            _storeGrid(),
+            const SizedBox(height: 50),
+          ],
         ],
       ),
     );
@@ -565,7 +580,11 @@ class _HomeTabState extends State<HomeTab> {
                         ),
                       ),
                       SizedBox(width: 2),
-                      Icon(LucideIcons.chevronRight, color: CityCipherTheme.foreground, size: 16),
+                      Icon(
+                        LucideIcons.chevronRight,
+                        color: CityCipherTheme.foreground,
+                        size: 16,
+                      ),
                     ],
                   ),
                 ),
@@ -624,110 +643,14 @@ class _HomeTabState extends State<HomeTab> {
       mainAxisSpacing: 14,
       crossAxisSpacing: 14,
       childAspectRatio: 0.88,
-      children: stores.map((s) => _storeCard(context, s)).toList(),
-    );
-  }
-
-  Widget _storeCard(BuildContext context, Store store) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => StoreDetailScreen(storeId: store.id),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-          ),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: CityCipherTheme.border.withValues(alpha: 0.5),
-            width: 1.5,
-          ),
-        ),
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: CityCipherTheme.background,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: CityCipherTheme.mutedForeground,
-                      width: 2,
-                    ),
-                  ),
-                  child: ClipOval(
-                    child: Image.network(
-                      store.logo,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-
-                        return Icon(
-                          LucideIcons.store,
-                          size: 40,
-                          color: CityCipherTheme.mutedForeground,
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          LucideIcons.store,
-                          size: 40,
-                          color: CityCipherTheme.mutedForeground,
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          store.name,
-                          style: const TextStyle(
-                            fontFamily: "Poppins",
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: CityCipherTheme.foreground,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+      children: stores.map((s) => StoreCard(store: s)).toList(),
     );
   }
 }
 
 class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
-  Size get preferredSize => const Size.fromHeight(70);
+  Size get preferredSize => const Size.fromHeight(60);
 
   @override
   Widget build(BuildContext context) {
@@ -735,7 +658,7 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       titleSpacing: 0,
       title: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -763,7 +686,7 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 IconButton(
                   icon: const Icon(
                     LucideIcons.bell,
-                    size: 30,
+                    size: 32,
                     color: CityCipherTheme.foreground,
                   ),
                   onPressed: () {},

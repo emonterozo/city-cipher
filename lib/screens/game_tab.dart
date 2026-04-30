@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'dart:math' as math;
-import 'core/theme.dart';
+import '../core/theme.dart';
 import 'game_data.dart';
 
 class GameTab extends StatefulWidget {

@@ -1,7 +1,7 @@
+import 'package:city_cipher/shared/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'core/theme.dart';
-import 'core/app_typography.dart';
+import '../core/theme.dart';
 
 class RewardsTab extends StatefulWidget {
   const RewardsTab({super.key});
@@ -73,27 +73,7 @@ class _RewardsTabState extends State<RewardsTab> {
 
     return Scaffold(
       backgroundColor: CityCipherTheme.background,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        titleSpacing: 0,
-        title: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Row(
-            children: [Text("My Rewards", style: AppTypography.titleLarge)],
-          ),
-        ),
-        backgroundColor: CityCipherTheme.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: CityCipherTheme.border,
-            height: 1,
-            width: double.infinity,
-          ),
-        ),
-      ),
+      appBar: CustomAppBar(title: "My Rewards", showBack: false,),
       body: Column(
         children: [
           SizedBox(height: 12),

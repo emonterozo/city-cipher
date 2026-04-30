@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:city_cipher/core/theme.dart';
-import 'core/link_service.dart';
-import 'core/state/app_state.dart';
-import 'core/utils/time_utils.dart';
-import 'models/store/store_model.dart';
-import 'services/api_service.dart';
+import '../core/link_service.dart';
+import '../core/state/app_state.dart';
+import '../core/utils/time_utils.dart';
+import '../models/store/store_model.dart';
+import '../services/api_service.dart';
 
 class StoreDetailScreen extends StatefulWidget {
   final String storeId;

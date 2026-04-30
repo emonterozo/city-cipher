@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'game_tab.dart';
-import 'home_tab.dart';
-import 'rewards_tab.dart';
+import 'screens/game_tab.dart';
+import 'screens/home_tab.dart';
+import 'screens/rewards_tab.dart';
 import 'core/theme.dart';
 
 void main() => runApp(const CityCipherApp());

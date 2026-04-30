@@ -35,6 +35,7 @@ class ApiService {
     bool isActive = true,
     String sort = "sort_order",
     String order = "asc",
+    String? search,
   }) async {
     final queryParams = {
       "page": page.toString(),
@@ -43,6 +44,7 @@ class ApiService {
       "is_active": isActive.toString(),
       "sort": sort,
       "order": order,
+      if (search != null && search.isNotEmpty) "search": search,
     };
 
     final uri = Uri.parse(
@@ -57,9 +59,7 @@ class ApiService {
   }
 
   Future<StoreSingleResponse> getStoreDetails(String id) async {
-    final url = Uri.parse(
-      "$baseUrl/api/stores/$id",
-    );
+    final url = Uri.parse("$baseUrl/api/stores/$id");
 
     final response = await http.get(url, headers: _headers);
 
