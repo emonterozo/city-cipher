@@ -1,32 +1,38 @@
+import 'package:city_cipher/screens/reward_details_screen.dart';
+import 'package:city_cipher/shared/widgets/reward_card_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:city_cipher/core/theme.dart';
+import 'package:shimmer/shimmer.dart';
 import '../core/link_service.dart';
-import '../core/state/app_state.dart';
+import '../core/enums/app_enums.dart';
 import '../core/utils/time_utils.dart';
+import '../models/reward/reward_model.dart';
 import '../models/store/store_model.dart';
 import '../services/api_service.dart';
+import '../shared/widgets/error_state_view.dart';
 
-class StoreDetailScreen extends StatefulWidget {
+class StoreDetailsScreen extends StatefulWidget {
   final String storeId;
-  const StoreDetailScreen({super.key, required this.storeId});
+  const StoreDetailsScreen({super.key, required this.storeId});
 
   @override
-  State<StoreDetailScreen> createState() => _StoreDetailScreenState();
+  State<StoreDetailsScreen> createState() => _StoreDetailsScreenState();
 }
 
-class _StoreDetailScreenState extends State<StoreDetailScreen> {
+class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
   final ApiService apiService = ApiService();
   Store? store;
   AppState storeState = AppState.loading;
 
-  @override
-  void initState() {
-    super.initState();
-    fetchStoreDetails();
-  }
+  int _page = 1;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  List<Reward> rewards = [];
+  final ScrollController _scrollController = ScrollController();
 
   Future<void> fetchStoreDetails() async {
     setState(() {
@@ -38,7 +44,11 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
 
       setState(() {
         if (response.success) {
-          store = response.data;
+          store = response.store;
+          setState(() {
+            rewards.addAll(response.rewards);
+            _hasMore = _page < response.meta.totalPages;
+          });
           storeState = AppState.loaded;
         } else {
           storeState = AppState.error;
@@ -51,12 +61,75 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
     }
   }
 
+  Future<void> fetchMoreRewards() async {
+    if (_isLoadingMore || !_hasMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    _page++;
+
+    try {
+      final response = await apiService.getStoreRewards(
+        page: _page,
+        limit: 10,
+        storeId: widget.storeId,
+      );
+
+      if (response.success) {
+        setState(() {
+          rewards.addAll(response.data);
+          _hasMore = _page < response.meta.totalPages;
+        });
+      }
+    } catch (e) {
+      _page--;
+    }
+
+    setState(() {
+      _isLoadingMore = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchStoreDetails();
+
+    _scrollController.addListener(() {
+      if (storeState == AppState.loaded &&
+          _scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent - 200) {
+        fetchMoreRewards();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (storeState == AppState.loading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: CityCipherTheme.primary),
+    if (storeState == AppState.error) {
+      return Scaffold(
+        backgroundColor: CityCipherTheme.background,
+
+        body: Stack(
+          children: [
+            Positioned(
+              top: 64,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8.0, top: 4.0),
+                child: IconButton(
+                  icon: const Icon(
+                    LucideIcons.chevronLeft,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+            ErrorStateView(onRetry: () => fetchStoreDetails()),
+          ],
         ),
       );
     }
@@ -64,6 +137,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
     return Scaffold(
       backgroundColor: CityCipherTheme.background,
       body: CustomScrollView(
+        controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
           _buildHeroAppBar(store),
@@ -76,22 +150,78 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                     [
                       Column(
                         children: [
-                          Text(
-                            store?.description ?? '',
-                            style: const TextStyle(
-                              fontFamily: "Poppins",
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: CityCipherTheme.mutedForeground,
-                              letterSpacing: 0.6,
-                              height: 1.5,
-                            ),
-                          ),
+                          storeState == AppState.loading
+                              ? Shimmer.fromColors(
+                                  baseColor: const Color(0xFF1E293B),
+                                  highlightColor: const Color(0xFF334155),
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  store?.description ?? '',
+                                  style: const TextStyle(
+                                    fontFamily: "Poppins",
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: CityCipherTheme.mutedForeground,
+                                    letterSpacing: 0.6,
+                                    height: 1.5,
+                                  ),
+                                ),
                         ],
                       ),
                       const SizedBox(height: 30),
+                      if (storeState == AppState.loading) ...[
+                        Shimmer.fromColors(
+                          baseColor: const Color(0xFF1E293B),
+                          highlightColor: const Color(0xFF334155),
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                              ),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: CityCipherTheme.border.withValues(
+                                  alpha: 0.5,
+                                ),
+                                width: 1.5,
+                              ),
+                            ),
+
+                            child: Padding(
+                              padding: EdgeInsetsGeometry.only(
+                                top: 12,
+                                bottom: 12,
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    LucideIcons.globe,
+                                    size: 20,
+                                    color: CityCipherTheme.secondary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                      ],
                       if (store?.website != null &&
-                          store!.website!.isNotEmpty) ...[
+                          store!.website!.isNotEmpty &&
+                          storeState == AppState.loaded) ...[
                         GestureDetector(
                           onTap: () => {
                             LinkService.openUrl(store?.website ?? ''),
@@ -153,6 +283,24 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
+                      if (storeState == AppState.loading)
+                        Shimmer.fromColors(
+                          baseColor: const Color(0xFF1E293B),
+                          highlightColor: const Color(0xFF334155),
+                          child: Container(
+                            height: 150,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: CityCipherTheme.border.withValues(
+                                  alpha: 0.5,
+                                ),
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
                     ] +
                     (store?.branches ?? [])
                         .map((branch) => BranchCard(branch: branch))
@@ -169,135 +317,131 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: CityCipherTheme.border.withValues(
-                              alpha: 0.5,
-                            ),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
+                      if (storeState == AppState.loading)
+                        ...List.generate(3, (_) => RewardCardLoading()),
+                      if (storeState == AppState.loaded && rewards.isEmpty) ...[
+                        Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                LucideIcons.ticketPercent,
-                                size: 45,
-                                color: CityCipherTheme.primary,
+                              Image.asset(
+                                'assets/images/error/error.png',
+                                width: 300,
+                                height: 250,
+                                fit: BoxFit.contain,
                               ),
-                              SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "50% sample product",
-                                      style: TextStyle(
-                                        color: CityCipherTheme.foreground,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        fontFamily: "Poppins",
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      "1,500 POINTS",
-                                      style: TextStyle(
-                                        color: CityCipherTheme.primary,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 12,
-                                        fontFamily: "Poppins",
-                                      ),
-                                    ),
-                                  ],
+                              Text(
+                                "No rewards available at the moment. Check back soon—we’ll notify you when new rewards arrive.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: "Poppins",
+                                  color: CityCipherTheme.mutedForeground
+                                      .withValues(alpha: 0.5),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
                                 ),
-                              ),
-                              Icon(
-                                LucideIcons.chevronRight,
-                                size: 25,
-                                color: CityCipherTheme.mutedForeground,
                               ),
                             ],
                           ),
                         ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: CityCipherTheme.border.withValues(
-                              alpha: 0.5,
-                            ),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Icon(
-                                LucideIcons.ticketPercent,
-                                size: 45,
-                                color: CityCipherTheme.primary,
-                              ),
-                              SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "50% sample product",
-                                      style: TextStyle(
-                                        color: CityCipherTheme.foreground,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        fontFamily: "Poppins",
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      "1,500 POINTS",
-                                      style: TextStyle(
-                                        color: CityCipherTheme.primary,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 12,
-                                        fontFamily: "Poppins",
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                LucideIcons.chevronRight,
-                                size: 25,
-                                color: CityCipherTheme.mutedForeground,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 50),
+                        const SizedBox(height: 60),
+                      ],
                     ],
               ),
             ),
           ),
+
+          SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final reward = rewards[index];
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          RewardDetailsScreen(rewardId: reward.id),
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(
+                    bottom: 16,
+                    left: 24,
+                    right: 24,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: CityCipherTheme.border.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(
+                          LucideIcons.ticketPercent,
+                          size: 45,
+                          color: CityCipherTheme.primary,
+                        ),
+                        SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                reward.title,
+                                style: TextStyle(
+                                  color: CityCipherTheme.foreground,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  fontFamily: "Poppins",
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                "${NumberFormat.decimalPattern().format(reward.pointsCost)} POINTS",
+                                style: TextStyle(
+                                  color: CityCipherTheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  fontFamily: "Poppins",
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          LucideIcons.chevronRight,
+                          size: 25,
+                          color: CityCipherTheme.mutedForeground,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }, childCount: rewards.length),
+          ),
+          if (_isLoadingMore && storeState == AppState.loaded)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: CityCipherTheme.primary,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -305,10 +449,88 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
 
   Widget _buildHeroAppBar(Store? store) {
     if (store == null) {
-      return const SliverAppBar(
+      return SliverAppBar(
         expandedHeight: 330,
         backgroundColor: CityCipherTheme.background,
-        flexibleSpace: Center(child: CircularProgressIndicator()),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8.0, top: 4.0),
+          child: IconButton(
+            icon: const Icon(
+              LucideIcons.chevronLeft,
+              color: Colors.white,
+              size: 30,
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        flexibleSpace: FlexibleSpaceBar(
+          background: Stack(
+            children: [
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 80,
+                child: Container(
+                  color: CityCipherTheme.background,
+                  padding: const EdgeInsets.only(left: 125, right: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Shimmer.fromColors(
+                        baseColor: Color(0xFF1E293B),
+                        highlightColor: Color(0xFF334155),
+                        child: Container(
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.all(Radius.circular(5)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Shimmer.fromColors(
+                        baseColor: Color(0xFF1E293B),
+                        highlightColor: Color(0xFF334155),
+                        child: Container(
+                          height: 20,
+                          margin: EdgeInsets.only(right: 24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.all(Radius.circular(5)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 20,
+                left: 16,
+                child: Shimmer.fromColors(
+                  baseColor: Color(0xFF1E293B),
+                  highlightColor: Color(0xFF334155),
+                  child: Container(
+                    height: 100,
+                    width: 100,
+                    decoration: BoxDecoration(
+                      color: Color(0xFF131A26),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
     final PageController controller = PageController();

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:city_cipher/core/theme.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
-import '../core/state/app_state.dart';
+import '../core/enums/app_enums.dart';
 import '../models/store/store_model.dart';
 import '../services/api_service.dart';
 import '../shared/widgets/custom_app_bar.dart';
@@ -168,6 +168,7 @@ class _StoreListScreenState extends State<StoreListScreen> {
                             ),
                             onPressed: () {
                               if (_searchQuery.isNotEmpty) {
+                                FocusScope.of(context).unfocus();
                                 fetchStores(reset: true);
                               }
                             },
@@ -260,14 +261,12 @@ class _StoreListScreenState extends State<StoreListScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        LucideIcons.store,
-                        size: 80,
-                        color: CityCipherTheme.mutedForeground.withValues(
-                          alpha: 0.5,
-                        ),
+                      Image.asset(
+                        'assets/images/error/error.png',
+                        width: 300,
+                        height: 250,
+                        fit: BoxFit.contain,
                       ),
-                      const SizedBox(height: 16),
                       Text(
                         "We couldn’t find any stores matching your search. Try refining your search.",
                         textAlign: TextAlign.center,

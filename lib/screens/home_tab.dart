@@ -5,7 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../core/link_service.dart';
-import '../core/state/app_state.dart';
+import '../core/enums/app_enums.dart';
 import '../models/promotion/promotion_model.dart';
 import '../models/store/store_model.dart';
 import '../core/theme.dart';
@@ -112,8 +112,8 @@ class _HomeTabState extends State<HomeTab> {
                   builder: (context) {
                     if (promotionState == AppState.loading) {
                       return Shimmer.fromColors(
-                        baseColor: CityCipherTheme.background,
-                        highlightColor: CityCipherTheme.primary,
+                        baseColor: const Color(0xFF1E293B),
+                        highlightColor: const Color(0xFF334155),
                         child: Stack(
                           children: [
                             Container(

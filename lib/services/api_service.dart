@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/promotion/promotion_response.dart';
+import '../models/reward/reward_response.dart';
 import '../models/store/store_response.dart';
 
 class ApiService {
@@ -58,13 +59,53 @@ class ApiService {
     return StoreResponse.fromJson(jsonData);
   }
 
-  Future<StoreSingleResponse> getStoreDetails(String id) async {
+  Future<StoreDetailsResponse> getStoreDetails(String id) async {
     final url = Uri.parse("$baseUrl/api/stores/$id");
 
     final response = await http.get(url, headers: _headers);
 
     final jsonData = jsonDecode(response.body);
 
-    return StoreSingleResponse.fromJson(jsonData);
+    return StoreDetailsResponse.fromJson(jsonData);
+  }
+
+  Future<RewardResponse> getStoreRewards({
+    int page = 1,
+    int limit = 10,
+    String fields = "title, points_cost",
+    bool isActive = true,
+    String sort = "sort_order",
+    String order = "asc",
+    String? storeId,
+  }) async {
+    final queryParams = {
+      "page": page.toString(),
+      "limit": limit.toString(),
+      "fields": fields,
+      "is_active": isActive.toString(),
+      "sort": sort,
+      "order": order,
+      if (storeId != null && storeId.isNotEmpty) "storeId": storeId,
+    };
+
+    final uri = Uri.parse(
+      "$baseUrl/api/rewards",
+    ).replace(queryParameters: queryParams);
+
+    final response = await http.get(uri, headers: _headers);
+
+    final jsonData = jsonDecode(response.body);
+
+    return RewardResponse.fromJson(jsonData);
+  }
+
+  Future<RewardDetailsResponse> getRewardDetails(String id) async {
+    final url = Uri.parse("$baseUrl/api/rewards/$id");
+
+    final response = await http.get(url, headers: _headers);
+
+    final jsonData = jsonDecode(response.body);
+
+    return RewardDetailsResponse.fromJson(jsonData);
   }
 }

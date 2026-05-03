@@ -1,3 +1,4 @@
+import '../reward/reward_model.dart';
 import '../shared/meta_model.dart';
 import 'store_model.dart';
 
@@ -23,16 +24,27 @@ class StoreResponse {
   }
 }
 
-class StoreSingleResponse {
+class StoreDetailsResponse {
   final bool success;
-  final Store data;
+  final Store store;
+  final List<Reward> rewards;
+  final Meta meta;
 
-  StoreSingleResponse({required this.success, required this.data});
+  StoreDetailsResponse({
+    required this.success,
+    required this.store,
+    required this.rewards,
+    required this.meta,
+  });
 
-  factory StoreSingleResponse.fromJson(Map<String, dynamic> json) {
-    return StoreSingleResponse(
+  factory StoreDetailsResponse.fromJson(Map<String, dynamic> json) {
+    return StoreDetailsResponse(
       success: json['success'] ?? false,
-      data: Store.fromJson(json['data'] ?? {}),
+      store: Store.fromJson(json['data']['store'] ?? {}),
+      rewards: (json['data']['rewards'] as List? ?? [])
+          .map((e) => Reward.fromJson(e))
+          .toList(),
+      meta: Meta.fromJson(json['data']['meta'] ?? {}),
     );
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme.dart';
 import '../../models/store/store_model.dart';
-import '../../screens/store_detail_screen.dart';
+import '../../screens/store_details_screen.dart';
 
 class StoreCard extends StatelessWidget {
   final Store store;
@@ -23,7 +23,7 @@ class StoreCard extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) =>
-                    StoreDetailScreen(storeId: store.id),
+                    StoreDetailsScreen(storeId: store.id),
               ),
             );
           },

@@ -109,4 +109,8 @@ class Store {
           .toList(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {'_id': id, 'name': name};
+  }
 }
