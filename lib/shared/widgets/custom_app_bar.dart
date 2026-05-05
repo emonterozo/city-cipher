@@ -4,15 +4,17 @@ import '../../core/app_typography.dart';
 import '../../core/theme.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String title;
+  final String? title;
   final VoidCallback? onBack;
   final bool showBack;
+  final IconData? icon;
 
   const CustomAppBar({
     super.key,
-    required this.title,
+    this.title,
     this.onBack,
     this.showBack = true,
+    this.icon = LucideIcons.chevronLeft
   });
 
   @override
@@ -30,14 +32,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             if (showBack)
               IconButton(
                 onPressed: onBack ?? () => Navigator.pop(context),
-                icon: const Icon(LucideIcons.chevronLeft),
+                icon: Icon(icon),
                 iconSize: 30,
                 color: CityCipherTheme.foreground,
               )
             else
               const SizedBox(width: 30),
             const SizedBox(width: 3),
-            Text(title, style: AppTypography.titleLarge),
+            if (title != null) ...[
+              Text(title!, style: AppTypography.titleLarge),
+            ]
           ],
         ),
       ),

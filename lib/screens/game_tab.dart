@@ -6,13 +6,12 @@ import '../core/theme.dart';
 import 'game_data.dart';
 
 class GameTab extends StatefulWidget {
-  final VoidCallback? onStartGame;
+ 
   final VoidCallback? onClose;
   final bool isFullView;
 
   const GameTab({
     super.key,
-    this.onStartGame,
     this.onClose,
     this.isFullView = false,
   });
@@ -478,7 +477,7 @@ class _GameTabState extends State<GameTab> {
                         _showIntro = false;
                       });
 
-                      widget.onStartGame?.call();
+                      //widget.onStartGame?.call();
                     },
                     child: Container(
                       width: double.infinity,

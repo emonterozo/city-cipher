@@ -1,3 +1,4 @@
+import 'package:city_cipher/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'screens/game_tab.dart';
@@ -13,10 +14,7 @@ class CityCipherApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: CityCipherTheme.background,
-      ),
+      theme: CityCipherTheme.darkTheme,
       home: const MainNavigation(),
     );
   }
@@ -77,11 +75,7 @@ class _MainNavigationState extends State<MainNavigation> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildTabItem(
-                  index: 0,
-                  icon: LucideIcons.house,
-                  label: "Home",
-                ),
+                _buildTabItem(index: 0, icon: LucideIcons.house, label: "Home"),
 
                 const SizedBox(width: 48),
                 _buildTabItem(
@@ -95,7 +89,11 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
         if (_isGameActive)
           Positioned.fill(
-            child: GameTab(
+            // child: GameTab(
+            //   isFullView: true,
+            //   onClose: () => setState(() => _isGameActive = false),
+            // ),
+            child: LoginScreen(
               isFullView: true,
               onClose: () => setState(() => _isGameActive = false),
             ),
@@ -118,7 +116,9 @@ class _MainNavigationState extends State<MainNavigation> {
         children: [
           Icon(
             icon,
-            color: isSelected ? CityCipherTheme.primary : CityCipherTheme.mutedForeground,
+            color: isSelected
+                ? CityCipherTheme.primary
+                : CityCipherTheme.mutedForeground,
             size: 28,
           ),
           const SizedBox(height: 2),
@@ -127,7 +127,9 @@ class _MainNavigationState extends State<MainNavigation> {
             style: TextStyle(
               fontFamily: "Poppins",
               fontSize: 10,
-              color: isSelected ? CityCipherTheme.primary : CityCipherTheme.mutedForeground,
+              color: isSelected
+                  ? CityCipherTheme.primary
+                  : CityCipherTheme.mutedForeground,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),

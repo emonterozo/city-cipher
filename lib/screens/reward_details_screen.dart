@@ -153,6 +153,7 @@ class _RewardDetailsScreenState extends State<RewardDetailsScreen> {
       case AppState.error:
         return ErrorStateView(onRetry: () => fetchRewardDetails());
       case AppState.loaded:
+      case AppState.initialize:
         return reward == null ? const SizedBox() : _buildRewardContent();
     }
   }

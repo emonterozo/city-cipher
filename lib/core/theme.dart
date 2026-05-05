@@ -13,6 +13,7 @@ class CityCipherTheme {
   static const Color cardForeground = Color(0xFFF8FAFC);
   static const Color border = Color(0xFF1E314B);
   static const Color input = Color(0xFF16243A);
+  static const Color error = Color(0xFFEF4444);
 
   static const String fontFamily = 'Poppins';
 
@@ -28,7 +29,7 @@ class CityCipherTheme {
       onSurface: foreground,
       outline: border,
     ),
-    
+
     appBarTheme: const AppBarTheme(
       backgroundColor: background,
       surfaceTintColor: Colors.transparent,
@@ -51,12 +52,26 @@ class CityCipherTheme {
       ),
     ),
 
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: card,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: border),
+    inputDecorationTheme:  InputDecorationTheme(
+      errorStyle: TextStyle(
+        color: Color(0xFFEF4444),
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        fontFamily: CityCipherTheme.fontFamily,
+      ),
+      errorBorder: UnderlineInputBorder(
+        borderSide: BorderSide(color: Color(0xFFEF4444), width: 1),
+      ),
+      hintStyle: TextStyle(
+        color: CityCipherTheme.mutedForeground,
+        fontSize: 16,
+        fontFamily: CityCipherTheme.fontFamily,
+      ),
+      enabledBorder: UnderlineInputBorder(
+        borderSide: BorderSide(color: Color(0xFF334155), width: 1),
+      ),
+      focusedBorder: UnderlineInputBorder(
+        borderSide: BorderSide(color: CityCipherTheme.primary, width: 2),
       ),
     ),
   );
