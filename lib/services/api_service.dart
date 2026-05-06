@@ -180,4 +180,35 @@ class ApiService {
 
     return LoginResponse.fromJson(jsonData);
   }
+
+  Future<OtpResponse> forgotPassword(String mobileNumber) async {
+    final url = Uri.parse("$baseUrl/api/users/forgot");
+
+    final response = await http.post(
+      url,
+      headers: _headers,
+      body: jsonEncode({"mobile_number": mobileNumber}),
+    );
+
+    final jsonData = jsonDecode(response.body);
+
+    return OtpResponse.fromJson(jsonData);
+  }
+
+  Future<ResetPasswordResponse> resetPassword(
+    String userId,
+    String password,
+  ) async {
+    final url = Uri.parse("$baseUrl/api/users/reset");
+
+    final response = await http.post(
+      url,
+      headers: _headers,
+      body: jsonEncode({"user_id": userId, "password": password}),
+    );
+
+    final jsonData = jsonDecode(response.body);
+
+    return ResetPasswordResponse.fromJson(jsonData);
+  }
 }

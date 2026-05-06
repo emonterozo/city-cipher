@@ -1,4 +1,5 @@
 import 'package:city_cipher/main.dart';
+import 'package:city_cipher/screens/forgot_password_screen.dart';
 import 'package:city_cipher/screens/verification_screen.dart';
 import 'package:city_cipher/screens/registration_screen.dart';
 import 'package:city_cipher/shared/widgets/custom_app_bar.dart';
@@ -20,7 +21,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final bool _obscurePassword = true;
+  bool _obscurePassword = true;
   String _mobileNumber = '';
   String _password = '';
 
@@ -65,6 +66,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               resendDuration: response.retryAfter ?? 0,
               id: response.id ?? '',
               type: OtpType.registration,
+              onSuccess: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => GameTab()),
+                );
+              },
             ),
           ),
         );
@@ -151,30 +158,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     _mobileNumber = value;
                   });
                 },
-                keyboardType: TextInputType.phone,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
-                  fontFamily: "Poppins",
+                  fontFamily: CityCipherTheme.fontFamily,
                 ),
                 cursorColor: CityCipherTheme.primary,
-                decoration: InputDecoration(
-                  hintText: "09123456789",
-                  hintStyle: TextStyle(
-                    color: CityCipherTheme.mutedForeground,
-                    fontSize: 16,
-                    fontFamily: "Poppins",
-                  ),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF334155), width: 1),
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: CityCipherTheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                ),
+                decoration: InputDecoration(hintText: "09123456789"),
               ),
               const SizedBox(height: 24),
               _buildLabel("PASSWORD"),
@@ -188,24 +178,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
-                  fontFamily: "Poppins",
+                  fontFamily: CityCipherTheme.fontFamily,
                 ),
                 cursorColor: CityCipherTheme.primary,
                 decoration: InputDecoration(
                   hintText: "••••••••••",
-                  hintStyle: TextStyle(
-                    color: CityCipherTheme.mutedForeground,
-                    fontSize: 16,
-                    fontFamily: "Poppins",
-                  ),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF334155), width: 1),
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: CityCipherTheme.primary,
-                      width: 2,
+
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
+                      size: 22,
+                      color: CityCipherTheme.mutedForeground,
                     ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
                   ),
                 ),
               ),
@@ -214,6 +203,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 alignment: Alignment.centerRight,
 
                 child: GestureDetector(
+                  onTap: () => {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ForgotPasswordScreen(),
+                      ),
+                    ),
+                  },
                   child: Text(
                     "Forgot Password?",
                     style: TextStyle(
@@ -309,7 +306,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 0),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
         style: const TextStyle(

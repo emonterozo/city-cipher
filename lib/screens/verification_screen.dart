@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:city_cipher/core/theme.dart';
 import 'package:city_cipher/main.dart';
-import 'package:city_cipher/screens/game_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -18,6 +17,7 @@ class VerificationScreen extends ConsumerStatefulWidget {
   final OtpType type;
   final bool? isLocked;
   final int? lockedSecondsRemaining;
+  final VoidCallback? onSuccess;
 
   const VerificationScreen({
     super.key,
@@ -26,6 +26,7 @@ class VerificationScreen extends ConsumerStatefulWidget {
     required this.type,
     this.isLocked,
     this.lockedSecondsRemaining,
+    this.onSuccess,
   });
 
   @override
@@ -94,25 +95,26 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       });
 
       if (response.success) {
-        await ref
-            .read(authProvider.notifier)
-            .setAuth(
-              userId: response.id,
-              accessToken: response.accessToken,
-              refreshToken: response.refreshToken,
-            );
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => GameTab()),
-        );
+        if (widget.type == OtpType.registration) {
+          await ref
+              .read(authProvider.notifier)
+              .setAuth(
+                userId: response.id,
+                accessToken: response.accessToken,
+                refreshToken: response.refreshToken,
+              );
+        }
+
+        widget.onSuccess?.call();
       } else {
+        if (!mounted) return;
         ToastHelper.show(context, message: response.message);
       }
     } catch (e) {
       setState(() {
         verifyState = AppState.error;
       });
+      if (!mounted) return;
       ToastHelper.show(context);
     }
   }

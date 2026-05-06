@@ -1,84 +1,65 @@
-import 'package:city_cipher/core/validators/mobile_validators.dart';
-import 'package:city_cipher/core/validators/password_validators.dart';
-import 'package:city_cipher/main.dart';
 import 'package:city_cipher/screens/login_screen.dart';
-import 'package:city_cipher/screens/verification_screen.dart';
 import 'package:city_cipher/shared/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../core/enums/app_enums.dart';
 import '../core/theme.dart';
-import '../core/validators/name_validators.dart';
+import '../core/validators/password_validators.dart';
 import '../services/api_service.dart';
 import '../shared/utils/toast.dart';
-import 'game_tab.dart';
 
-class RegistrationScreen extends StatefulWidget {
-  const RegistrationScreen({super.key});
+class PasswordSettingScreen extends StatefulWidget {
+  final String id;
+  const PasswordSettingScreen({super.key, required this.id});
 
   @override
-  State<RegistrationScreen> createState() => _RegistrationScreenState();
+  State<PasswordSettingScreen> createState() => _PasswordSettingScreenState();
 }
 
-class _RegistrationScreenState extends State<RegistrationScreen> {
+class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
   bool _submitted = false;
 
-  NameInput _firstName = const NameInput.pure(fieldName: "First name");
-  NameInput _lastName = const NameInput.pure(fieldName: "Last name");
-  MobileNumberInput _mobileNumber = const MobileNumberInput.pure();
   PasswordInput _password = const PasswordInput.pure();
   String _confirmPassword = '';
 
   final ApiService apiService = ApiService();
-  AppState registrationState = AppState.initialize;
+  AppState resetPasswordState = AppState.initialize;
 
-  Future<void> register() async {
+  Future<void> resetPassword() async {
     setState(() {
-      registrationState = AppState.loading;
+      resetPasswordState = AppState.loading;
     });
 
     try {
-      final response = await apiService.userRegistration(
-        _firstName.value,
-        _lastName.value,
-        _mobileNumber.value,
+      final response = await apiService.resetPassword(
+        widget.id,
         _password.value,
       );
 
       if (!mounted) return;
 
       setState(() {
-        registrationState = response.success ? AppState.loaded : AppState.error;
+        resetPasswordState = response.success
+            ? AppState.loaded
+            : AppState.error;
       });
 
       if (response.success) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => VerificationScreen(
-              resendDuration: response.retryAfter,
-              id: response.userId,
-              type: OtpType.registration,
-              onSuccess: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => GameTab()),
-                );
-              },
-            ),
-          ),
+          MaterialPageRoute(builder: (_) => LoginScreen()),
         );
-      } else {
-        ToastHelper.show(context, message: response.message);
+        return;
       }
+      ToastHelper.show(context);
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
-        registrationState = AppState.error;
+        resetPasswordState = AppState.error;
       });
 
       ToastHelper.show(context);
@@ -86,18 +67,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: CityCipherTheme.background,
-      appBar: CustomAppBar(
-        icon: LucideIcons.x,
-        onBack: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => MainNavigation()),
-          );
-        },
-      ),
+      appBar: CustomAppBar(icon: LucideIcons.x),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -106,7 +84,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             children: [
               const SizedBox(height: 40),
               const Text(
-                "Create your account",
+                "Create New Password",
                 style: TextStyle(
                   color: CityCipherTheme.foreground,
                   fontSize: 24,
@@ -116,7 +94,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                "Enter your details to start your journey.",
+                "Enter your new password to secure your account.",
                 style: TextStyle(
                   color: CityCipherTheme.mutedForeground,
                   fontSize: 14,
@@ -124,75 +102,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 ),
               ),
               const SizedBox(height: 48),
-              _buildLabel("FIRST NAME"),
-              TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _firstName = NameInput.dirty(
-                      fieldName: "First name",
-                      value: value,
-                    );
-                  });
-                },
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontFamily: CityCipherTheme.fontFamily,
-                ),
-                cursorColor: CityCipherTheme.primary,
-                decoration: InputDecoration(
-                  errorText: _submitted && _firstName.isNotValid
-                      ? _firstName.errorMessage
-                      : null,
-                  hintText: "John",
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildLabel("LAST NAME"),
-              TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _lastName = NameInput.dirty(
-                      fieldName: "Last name",
-                      value: value,
-                    );
-                  });
-                },
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontFamily: CityCipherTheme.fontFamily,
-                ),
-                cursorColor: CityCipherTheme.primary,
-                decoration: InputDecoration(
-                  errorText: _submitted && _lastName.isNotValid
-                      ? _lastName.errorMessage
-                      : null,
-                  hintText: "Doe",
-                ),
-              ),
-              const SizedBox(height: 24),
-              _buildLabel("MOBILE NUMBER"),
-              TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _mobileNumber = MobileNumberInput.dirty(value: value);
-                  });
-                },
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontFamily: CityCipherTheme.fontFamily,
-                ),
-                cursorColor: CityCipherTheme.primary,
-                decoration: InputDecoration(
-                  errorText: _submitted && _mobileNumber.isNotValid
-                      ? _mobileNumber.errorMessage
-                      : null,
-                  hintText: "09123456789",
-                ),
-              ),
-              const SizedBox(height: 24),
               _buildLabel("PASSWORD"),
               TextField(
                 onChanged: (value) {
@@ -268,49 +177,34 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 32),
-
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: registrationState == AppState.loading
+                  onPressed: resetPasswordState == AppState.loading
                       ? null
                       : () {
                           FocusScope.of(context).unfocus();
                           setState(() {
                             _submitted = true;
-                            _firstName = NameInput.dirty(
-                              fieldName: "First name",
-                              value: _firstName.value,
-                            );
-                            _lastName = NameInput.dirty(
-                              fieldName: "Last name",
-                              value: _lastName.value,
-                            );
-                            _mobileNumber = MobileNumberInput.dirty(
-                              value: _mobileNumber.value,
-                            );
                           });
 
                           final isValid =
-                              _firstName.isValid &&
-                              _lastName.isValid &&
-                              _mobileNumber.isValid &&
                               _password.isValid &&
                               _confirmPassword == _password.value;
 
                           if (!isValid) return;
-                          register();
+                          resetPassword();
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: CityCipherTheme.primary,
+                    minimumSize: const Size(double.infinity, 56),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: registrationState == AppState.loading
+                  child: resetPasswordState == AppState.loading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
@@ -320,7 +214,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ),
                         )
                       : const Text(
-                          "REGISTER",
+                          "SUBMIT",
                           style: TextStyle(
                             fontFamily: CityCipherTheme.fontFamily,
                             color: CityCipherTheme.primaryForeground,
@@ -330,40 +224,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         ),
                 ),
               ),
-
-              const SizedBox(height: 15),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "Already have an account?",
-                    style: TextStyle(
-                      color: CityCipherTheme.mutedForeground,
-                      fontFamily: CityCipherTheme.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => LoginScreen()),
-                      );
-                    },
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(
-                        fontFamily: CityCipherTheme.fontFamily,
-                        color: CityCipherTheme.secondary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -373,7 +233,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 8, left: 0),
       child: Text(
         text,
         style: const TextStyle(

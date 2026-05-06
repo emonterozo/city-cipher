@@ -24,6 +24,8 @@ class RegistrationResponse {
 class OtpResponse {
   final bool success;
   final String message;
+  final String id;
+  final bool isLocked;
   final int resendCount;
   final int remainingSend;
   final int retryAfter;
@@ -31,6 +33,8 @@ class OtpResponse {
   OtpResponse({
     required this.success,
     required this.message,
+    required this.isLocked,
+    required this.id,
     required this.resendCount,
     required this.remainingSend,
     required this.retryAfter,
@@ -40,6 +44,8 @@ class OtpResponse {
     return OtpResponse(
       success: json['success'] ?? false,
       message: json['message'] ?? '',
+      isLocked: json['is_locked'] ?? false,
+      id: json['id'] ?? '',
       resendCount: json['resend_count'] ?? 0,
       remainingSend: json['remaining_send'] ?? 0,
       retryAfter: json['retry_after'] ?? 0,
@@ -107,6 +113,20 @@ class LoginResponse {
       resendCount: json['resend_count'],
       remainingSend: json['remaining_send'],
       retryAfter: json['retry_after'],
+    );
+  }
+}
+
+class ResetPasswordResponse {
+  final bool success;
+  final String message;
+
+  ResetPasswordResponse({required this.success, required this.message});
+
+  factory ResetPasswordResponse.fromJson(Map<String, dynamic> json) {
+    return ResetPasswordResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
     );
   }
 }
