@@ -95,6 +95,13 @@ class _StoreListScreenState extends State<StoreListScreen> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     fetchStores();

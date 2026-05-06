@@ -149,7 +149,11 @@ class ApiService {
     return OtpResponse.fromJson(jsonData);
   }
 
-  Future<VerifyOtpResponse> verifyOtp(String userId, String otp, OtpType type) async {
+  Future<VerifyOtpResponse> verifyOtp(
+    String userId,
+    String otp,
+    OtpType type,
+  ) async {
     final url = Uri.parse("$baseUrl/api/users/verify");
 
     final response = await http.post(
@@ -161,5 +165,19 @@ class ApiService {
     final jsonData = jsonDecode(response.body);
 
     return VerifyOtpResponse.fromJson(jsonData);
+  }
+
+  Future<LoginResponse> login(String mobileNumber, String password) async {
+    final url = Uri.parse("$baseUrl/api/users/login");
+
+    final response = await http.post(
+      url,
+      headers: _headers,
+      body: jsonEncode({"mobile_number": mobileNumber, "password": password}),
+    );
+
+    final jsonData = jsonDecode(response.body);
+
+    return LoginResponse.fromJson(jsonData);
   }
 }

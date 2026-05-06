@@ -1,6 +1,8 @@
 import 'package:city_cipher/core/validators/mobile_validators.dart';
 import 'package:city_cipher/core/validators/password_validators.dart';
-import 'package:city_cipher/screens/registration_verification_screen.dart';
+import 'package:city_cipher/main.dart';
+import 'package:city_cipher/screens/login_screen.dart';
+import 'package:city_cipher/screens/verification_screen.dart';
 import 'package:city_cipher/shared/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -11,9 +13,7 @@ import '../services/api_service.dart';
 import '../shared/utils/toast.dart';
 
 class RegistrationScreen extends StatefulWidget {
-  final VoidCallback? onClose;
-
-  const RegistrationScreen({super.key, this.onClose});
+  const RegistrationScreen({super.key});
 
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
@@ -54,17 +54,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       });
 
       if (response.success) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => RegistrationVerificationScreen(
+            builder: (context) => VerificationScreen(
               resendDuration: response.retryAfter,
               id: response.userId,
+              type: OtpType.registration,
             ),
           ),
         );
       } else {
-        ToastHelper.show(message: response.message);
+        ToastHelper.show(context, message: response.message);
       }
     } catch (e) {
       if (!mounted) return;
@@ -73,7 +74,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         registrationState = AppState.error;
       });
 
-      ToastHelper.show();
+      ToastHelper.show(context);
     }
   }
 
@@ -84,8 +85,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       appBar: CustomAppBar(
         icon: LucideIcons.x,
         onBack: () {
-          Navigator.pop(context);
-          widget.onClose!();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => MainNavigation()),
+          );
         },
       ),
       body: SafeArea(
@@ -336,7 +339,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   const SizedBox(width: 5),
                   GestureDetector(
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => LoginScreen()),
+                      );
                     },
                     child: const Text(
                       "Login",

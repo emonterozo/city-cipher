@@ -52,7 +52,7 @@ class CityCipherTheme {
       ),
     ),
 
-    inputDecorationTheme:  InputDecorationTheme(
+    inputDecorationTheme: InputDecorationTheme(
       errorStyle: TextStyle(
         color: Color(0xFFEF4444),
         fontSize: 12,
@@ -61,6 +61,12 @@ class CityCipherTheme {
       ),
       errorBorder: UnderlineInputBorder(
         borderSide: BorderSide(color: Color(0xFFEF4444), width: 1),
+      ),
+      focusedErrorBorder: UnderlineInputBorder(
+        borderSide: BorderSide(
+          color: Color(0xFFEF4444),
+          width: 2,
+        ), // Keep it pure red
       ),
       hintStyle: TextStyle(
         color: CityCipherTheme.mutedForeground,

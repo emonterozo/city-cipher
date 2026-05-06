@@ -1,3 +1,4 @@
+import 'package:city_cipher/main.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -6,15 +7,7 @@ import '../core/theme.dart';
 import 'game_data.dart';
 
 class GameTab extends StatefulWidget {
- 
-  final VoidCallback? onClose;
-  final bool isFullView;
-
-  const GameTab({
-    super.key,
-    this.onClose,
-    this.isFullView = false,
-  });
+  const GameTab({super.key});
 
   @override
   State<GameTab> createState() => _GameTabState();
@@ -33,10 +26,8 @@ class _GameTabState extends State<GameTab> {
   @override
   void initState() {
     super.initState();
-    if (widget.isFullView) {
-      _initLevel();
-      _showIntro = true;
-    }
+    _initLevel();
+    _showIntro = true;
   }
 
   void _initLevel() {
@@ -134,7 +125,12 @@ class _GameTabState extends State<GameTab> {
                   color: CityCipherTheme.foreground,
                   size: 24,
                 ),
-                onPressed: widget.onClose,
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => MainNavigation()),
+                  );
+                },
               ),
               Row(
                 children: [
@@ -417,7 +413,7 @@ class _GameTabState extends State<GameTab> {
               _initLevel();
             });
           } else {
-            widget.onClose?.call();
+            //widget.onClose?.call();
           }
         });
       }
@@ -520,7 +516,7 @@ class _GameTabState extends State<GameTab> {
             top: MediaQuery.of(context).padding.top + 10,
             left: 16,
             child: IconButton(
-              onPressed: widget.onClose,
+              onPressed: () {},
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(

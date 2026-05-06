@@ -1,31 +1,38 @@
 import 'dart:async';
 import 'package:city_cipher/core/theme.dart';
+import 'package:city_cipher/main.dart';
 import 'package:city_cipher/screens/game_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/enums/app_enums.dart';
+import '../core/providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../shared/utils/toast.dart';
 import '../shared/widgets/custom_app_bar.dart';
 
-class RegistrationVerificationScreen extends StatefulWidget {
+class VerificationScreen extends ConsumerStatefulWidget {
   final int resendDuration;
   final String id;
+  final OtpType type;
+  final bool? isLocked;
+  final int? lockedSecondsRemaining;
 
-  const RegistrationVerificationScreen({
+  const VerificationScreen({
     super.key,
     required this.resendDuration,
     required this.id,
+    required this.type,
+    this.isLocked,
+    this.lockedSecondsRemaining,
   });
 
   @override
-  State<RegistrationVerificationScreen> createState() =>
-      _RegistrationVerificationScreenState();
+  ConsumerState<VerificationScreen> createState() => _VerificationScreenState();
 }
 
-class _RegistrationVerificationScreenState
-    extends State<RegistrationVerificationScreen> {
+class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   final ApiService apiService = ApiService();
   AppState resendState = AppState.initialize;
   AppState verifyState = AppState.initialize;
@@ -38,20 +45,20 @@ class _RegistrationVerificationScreenState
   Timer? _timer;
   int _secondsRemaining = 0;
   bool _isLocked = false;
+  int _lockedSecondsRemaining = 0;
 
   String get _otp => _controllers.map((e) => e.text).join();
   bool get _isValid => _otp.length == 4;
 
   Future<void> resendOtp() async {
     try {
-      _controllers.clear();
+      for (var c in _controllers) {
+        c.clear();
+      }
       setState(() {
         resendState = AppState.loading;
       });
-      final response = await apiService.sendOtp(
-        widget.id,
-        OtpType.registration,
-      );
+      final response = await apiService.sendOtp(widget.id, widget.type);
       setState(() {
         resendState = AppState.loaded;
       });
@@ -64,13 +71,15 @@ class _RegistrationVerificationScreenState
       } else {
         setState(() {
           _isLocked = true;
+          _lockedSecondsRemaining = response.retryAfter;
         });
       }
     } catch (e) {
       setState(() {
         resendState = AppState.error;
       });
-      ToastHelper.show();
+      if (!mounted) return;
+      ToastHelper.show(context);
     }
   }
 
@@ -79,37 +88,41 @@ class _RegistrationVerificationScreenState
       setState(() {
         verifyState = AppState.loading;
       });
-      final response = await apiService.verifyOtp(
-        widget.id,
-        _otp,
-        OtpType.registration,
-      );
+      final response = await apiService.verifyOtp(widget.id, _otp, widget.type);
       setState(() {
         verifyState = AppState.loaded;
       });
 
-      if (!mounted) return;
-
       if (response.success) {
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => GameTab()),
-        // );
+        await ref
+            .read(authProvider.notifier)
+            .setAuth(
+              userId: response.id,
+              accessToken: response.accessToken,
+              refreshToken: response.refreshToken,
+            );
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => GameTab()),
+        );
       } else {
-        ToastHelper.show(message: response.message);
+        ToastHelper.show(context, message: response.message);
       }
     } catch (e) {
       setState(() {
         verifyState = AppState.error;
       });
-      ToastHelper.show();
+      ToastHelper.show(context);
     }
   }
 
   @override
   void initState() {
     super.initState();
+    _isLocked = widget.isLocked ?? false;
     _secondsRemaining = widget.resendDuration;
+    _lockedSecondsRemaining = widget.lockedSecondsRemaining ?? 0;
     _startTimer();
     for (var controller in _controllers) {
       controller.addListener(() => setState(() {}));
@@ -208,6 +221,29 @@ class _RegistrationVerificationScreenState
     );
   }
 
+  String formatDuration(int seconds) {
+    if (seconds < 60) {
+      return "$seconds ${seconds == 1 ? 'second' : 'seconds'}";
+    } else if (seconds < 3600) {
+      final minutes = seconds ~/ 60;
+      return "$minutes ${minutes == 1 ? 'minute' : 'minutes'}";
+    } else {
+      final hours = seconds ~/ 3600;
+      return "$hours ${hours == 1 ? 'hour' : 'hours'}";
+    }
+  }
+
+  String formatCountdown(int seconds) {
+    if (seconds < 61) {
+      return "${seconds}s";
+    }
+
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+
+    return "$minutes:${remainingSeconds.toString().padLeft(2, '0')}";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,7 +251,10 @@ class _RegistrationVerificationScreenState
       appBar: CustomAppBar(
         icon: LucideIcons.x,
         onBack: () {
-          Navigator.pop(context);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => MainNavigation()),
+          );
         },
       ),
       body: SafeArea(
@@ -236,7 +275,7 @@ class _RegistrationVerificationScreenState
               const SizedBox(height: 12),
               Text(
                 _isLocked
-                    ? "Too many failed attempts. Please try again in 24 hours."
+                    ? "Too many failed attempts. Please try again in ${formatDuration(_lockedSecondsRemaining)}."
                     : "Please enter the 4-digit code sent to your mobile number.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -257,11 +296,13 @@ class _RegistrationVerificationScreenState
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      "Didn't receive code?",
-                      style: const TextStyle(
-                        color: CityCipherTheme.mutedForeground,
-                        fontFamily: CityCipherTheme.fontFamily,
+                    Flexible(
+                      child: Text(
+                        "Didn't receive code?",
+                        style: const TextStyle(
+                          color: CityCipherTheme.mutedForeground,
+                          fontFamily: CityCipherTheme.fontFamily,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 5),
@@ -280,8 +321,8 @@ class _RegistrationVerificationScreenState
                                 : null,
                             child: Text(
                               _secondsRemaining > 0
-                                  ? "Resend code in ${_secondsRemaining}s"
-                                  : "Resend",
+                                  ? "Resend code in ${formatCountdown(_secondsRemaining)}"
+                                  : "Resend code",
                               style: TextStyle(
                                 fontFamily: CityCipherTheme.fontFamily,
                                 color: _secondsRemaining == 0
@@ -300,7 +341,7 @@ class _RegistrationVerificationScreenState
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: verifyState == AppState.loading
+                  onPressed: verifyState == AppState.loading || _isLocked
                       ? null
                       : _handleVerify,
                   style: ElevatedButton.styleFrom(

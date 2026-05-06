@@ -1,22 +1,104 @@
-import 'package:city_cipher/screens/registration_verification_screen.dart';
+import 'package:city_cipher/main.dart';
+import 'package:city_cipher/screens/verification_screen.dart';
 import 'package:city_cipher/screens/registration_screen.dart';
 import 'package:city_cipher/shared/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../core/enums/app_enums.dart';
+import '../core/providers/auth_provider.dart';
 import '../core/theme.dart';
+import '../services/api_service.dart';
+import '../shared/utils/toast.dart';
+import 'game_tab.dart';
 
-class LoginScreen extends StatefulWidget {
-  final VoidCallback? onClose;
-  final bool isFullView;
-
-  const LoginScreen({super.key, this.onClose, this.isFullView = false});
+class LoginScreen extends ConsumerStatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  bool _obscurePassword = true;
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final bool _obscurePassword = true;
+  String _mobileNumber = '';
+  String _password = '';
+
+  final ApiService apiService = ApiService();
+  AppState loginState = AppState.initialize;
+
+  Future<void> login() async {
+    setState(() {
+      loginState = AppState.loading;
+    });
+
+    try {
+      final response = await apiService.login(_mobileNumber, _password);
+
+      if (!mounted) return;
+
+      setState(() {
+        loginState = response.success ? AppState.loaded : AppState.error;
+      });
+
+      if (response.isLocked) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerificationScreen(
+              resendDuration: 0,
+              isLocked: true,
+              lockedSecondsRemaining: response.retryAfter,
+              id: response.id ?? '',
+              type: OtpType.registration,
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (response.remainingSend != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerificationScreen(
+              resendDuration: response.retryAfter ?? 0,
+              id: response.id ?? '',
+              type: OtpType.registration,
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (response.success) {
+        if (response.accessToken != null) {
+          await ref
+              .read(authProvider.notifier)
+              .setAuth(
+                userId: response.id ?? '',
+                accessToken: response.accessToken ?? '',
+                refreshToken: response.refreshToken ?? '',
+              );
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => GameTab()),
+          );
+        }
+      } else {
+        ToastHelper.show(context, message: response.message);
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        loginState = AppState.error;
+      });
+
+      ToastHelper.show(context);
+    }
+  }
 
   @override
   void initState() {
@@ -27,7 +109,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: CityCipherTheme.background,
-      appBar: CustomAppBar(icon: LucideIcons.x, onBack: widget.onClose),
+      appBar: CustomAppBar(
+        icon: LucideIcons.x,
+        onBack: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => MainNavigation()),
+          );
+        },
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -56,6 +146,11 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 48),
               _buildLabel("MOBILE NUMBER"),
               TextField(
+                onChanged: (value) {
+                  setState(() {
+                    _mobileNumber = value;
+                  });
+                },
                 keyboardType: TextInputType.phone,
                 style: const TextStyle(
                   color: Colors.white,
@@ -84,6 +179,11 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 24),
               _buildLabel("PASSWORD"),
               TextField(
+                onChanged: (value) {
+                  setState(() {
+                    _password = value;
+                  });
+                },
                 obscureText: _obscurePassword,
                 style: const TextStyle(
                   color: Colors.white,
@@ -130,7 +230,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: loginState == AppState.loading
+                      ? null
+                      : () {
+                          FocusScope.of(context).unfocus();
+
+                          final isValid =
+                              _mobileNumber.isNotEmpty && _password.isNotEmpty;
+
+                          if (!isValid) return;
+                          login();
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: CityCipherTheme.primary,
                     minimumSize: const Size(double.infinity, 56),
@@ -138,15 +248,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    "LOGIN",
-                    style: TextStyle(
-                      fontFamily: "Poppins",
-                      color: CityCipherTheme.primaryForeground,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: loginState == AppState.loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: CityCipherTheme.primary,
+                          ),
+                        )
+                      : const Text(
+                          "LOGIN",
+                          style: TextStyle(
+                            fontFamily: "Poppins",
+                            color: CityCipherTheme.primaryForeground,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 15),
@@ -163,11 +282,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(width: 5),
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              RegistrationScreen(onClose: widget.onClose),
+                          builder: (context) => RegistrationScreen(),
                         ),
                       );
                     },

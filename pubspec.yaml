@@ -1,3 +1,4 @@
+
 name: city_cipher
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
@@ -42,6 +43,8 @@ dependencies:
   intl: ^0.20.2
   formz: ^0.8.0
   fluttertoast: ^9.0.0
+  flutter_secure_storage: ^10.0.0
+  flutter_riverpod: ^3.3.1
 
 dev_dependencies:
   flutter_test:
