@@ -1,4 +1,3 @@
-import 'package:city_cipher/main.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -21,18 +20,17 @@ class _GameTabState extends State<GameTab> {
   List<String> _foundWords = [];
   late List<String> _shuffledLetters;
   List<Offset> _hintedOffsets = [];
-  bool _showIntro = true;
 
   @override
   void initState() {
     super.initState();
     _initLevel();
-    _showIntro = true;
   }
 
   void _initLevel() {
     final level = allLevels[_currentLevelIdx];
     _shuffledLetters = List.from(level.letters);
+    _shuffledLetters.shuffle();
     _foundWords = [];
     _hintedOffsets = List.from(level.preFilled ?? []);
     _selectedIndices = [];
@@ -40,10 +38,50 @@ class _GameTabState extends State<GameTab> {
 
   void _shuffle() => setState(() => _shuffledLetters.shuffle());
 
+  // --- LOGIC: COMPLETION CHECK ---
+
+  void _checkLevelComplete(GameLevel level) {
+    // 1. Get all unique coordinate points that need to be filled
+    Set<Offset> requiredPoints = {};
+    for (var item in level.grid) {
+      String word = item['word'];
+      for (int i = 0; i < word.length; i++) {
+        int cx = item['dir'] == 'h' ? item['x'] + i : item['x'];
+        int cy = item['dir'] == 'v' ? item['y'] + i : item['y'];
+        requiredPoints.add(Offset(cx.toDouble(), cy.toDouble()));
+      }
+    }
+
+    // 2. Check if every point is covered by either a found word or a hint
+    bool allFilled = requiredPoints.every((p) {
+      bool coveredByWord = level.grid.any(
+        (item) => _foundWords.contains(item['word']) && _isPointInWord(p, item),
+      );
+      bool coveredByHint = _hintedOffsets.contains(p);
+      return coveredByWord || coveredByHint;
+    });
+
+    if (allFilled) {
+      _proceedToNextLevel();
+    }
+  }
+
+  void _proceedToNextLevel() {
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted && _currentLevelIdx < allLevels.length - 1) {
+        setState(() {
+          _currentLevelIdx++;
+          _initLevel();
+        });
+      }
+    });
+  }
+
+  // --- LOGIC: HINTS ---
+
   void _handleHint() {
     if (_points >= 25) {
       _useHint();
-      setState(() => _points -= 25);
     } else {
       _showAdDialog();
     }
@@ -51,315 +89,162 @@ class _GameTabState extends State<GameTab> {
 
   void _useHint() {
     final level = allLevels[_currentLevelIdx];
-    List<Offset> hidden = [];
+    List<Offset> hiddenCoords = [];
+
     for (var item in level.grid) {
-      if (_foundWords.contains(item['word'])) continue;
-      for (int i = 0; i < item['word'].length; i++) {
+      String word = item['word'];
+      for (int i = 0; i < word.length; i++) {
         int cx = item['dir'] == 'h' ? item['x'] + i : item['x'];
         int cy = item['dir'] == 'v' ? item['y'] + i : item['y'];
         Offset p = Offset(cx.toDouble(), cy.toDouble());
-        if (!_hintedOffsets.contains(p)) hidden.add(p);
+
+        bool isVisible =
+            _foundWords.contains(word) ||
+            _hintedOffsets.contains(p) ||
+            level.grid.any(
+              (other) =>
+                  _foundWords.contains(other['word']) &&
+                  _isPointInWord(p, other),
+            );
+
+        if (!isVisible && !hiddenCoords.contains(p)) hiddenCoords.add(p);
       }
     }
-    if (hidden.isNotEmpty) {
-      setState(
-        () => _hintedOffsets.add(hidden[math.Random().nextInt(hidden.length)]),
-      );
+
+    if (hiddenCoords.isNotEmpty) {
+      setState(() {
+        _points -= 25;
+        _hintedOffsets.add(
+          hiddenCoords[math.Random().nextInt(hiddenCoords.length)],
+        );
+      });
+      _checkLevelComplete(level);
     }
   }
 
-  void _showAdDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text(
-          "Out of Points!",
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          "Watch a short video to display hint?",
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("CANCEL"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: CityCipherTheme.primary,
-            ),
-            onPressed: () {
-              setState(() => _points += 50);
-              Navigator.pop(context);
-            },
-            child: const Text("WATCH AD"),
-          ),
-        ],
-      ),
-    );
+  bool _isPointInWord(Offset p, Map<String, dynamic> item) {
+    String word = item['word'];
+    for (int i = 0; i < word.length; i++) {
+      int cx = item['dir'] == 'h' ? item['x'] + i : item['x'];
+      int cy = item['dir'] == 'v' ? item['y'] + i : item['y'];
+      if (p.dx == cx && p.dy == cy) return true;
+    }
+    return false;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // if (_showIntro) {
-    //   return _gameIntro();
-    // }
-    final level = allLevels[_currentLevelIdx];
+  // --- LOGIC: INTERACTION ---
 
-    return Scaffold(
-      backgroundColor: CityCipherTheme.background,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        titleSpacing: 0,
-        title: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(
-                  LucideIcons.x,
-                  color: CityCipherTheme.foreground,
-                  size: 24,
-                ),
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => MainNavigation()),
-                  );
-                },
-              ),
-              Row(
-                children: [
-                  Text(
-                    "LEVEL ${_currentLevelIdx + 1}",
-                    style: const TextStyle(
-                      fontFamily: "Poppins",
-                      color: CityCipherTheme.foreground,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Container(
-                    height: 20,
-                    width: 1,
-                    color: CityCipherTheme.border,
-                    margin: const EdgeInsets.symmetric(horizontal: 15),
-                  ),
-                  const FaIcon(
-                    FontAwesomeIcons.coins,
-                    size: 24,
-                    color: CityCipherTheme.primary,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    "$_points",
-                    style: const TextStyle(
-                      fontFamily: "Poppins",
-                      color: CityCipherTheme.foreground,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        backgroundColor: CityCipherTheme.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: CityCipherTheme.border,
-            height: 1,
-            width: double.infinity,
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // --- GRID AREA ---
-            Expanded(flex: 5, child: Center(child: _buildGrid(level))),
+  void _updateSelection(Offset pos) {
+    setState(() {
+      _currentDragPoint = pos;
+      const double size = 160;
+      const double centerX = size / 2;
+      const double centerY = size / 2;
+      const double letterRadius = size * 0.45;
 
-            // --- PREVIEW WORD ---
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              height: 50,
-              alignment: Alignment.center,
-              child: Text(
-                _getCurrentWord(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 6,
-                ),
-              ),
-            ),
-
-            // --- CONTROLS AREA ---
-            Expanded(
-              flex: 4,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // LEFT SIDE: SHUFFLE
-                    _buildCircleButton(
-                      icon: Icons.shuffle,
-                      color: Colors.white,
-                      onTap: _shuffle,
-                    ),
-
-                    // CENTER: COMPACT WHEEL
-                    GestureDetector(
-                      onPanStart: (d) => _updateSelection(d.localPosition),
-                      onPanUpdate: (d) => _updateSelection(d.localPosition),
-                      onPanEnd: (d) => _onPanEnd(level),
-                      child: CustomPaint(
-                        size: const Size(180, 180), // Slightly smaller size
-                        painter: WheelPainter(
-                          letters: _shuffledLetters,
-                          selectedIndices: _selectedIndices,
-                          currentDragPoint: _currentDragPoint,
-                        ),
-                      ),
-                    ),
-
-                    // RIGHT SIDE: VERTICAL HINTS
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildCircleButton(
-                          icon: Icons.lightbulb,
-                          color: Colors.amber,
-                          onTap: _handleHint,
-                          label: "25",
-                        ),
-                        const SizedBox(height: 15),
-                        _buildCircleButton(
-                          icon: Icons.ads_click,
-                          color: Colors.blueAccent,
-                          onTap: _showAdDialog,
-                          label: "FREE",
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // --- ADS BANNER ---
-            Container(
-              height: 60,
-              width: double.infinity,
-              color: Colors.black,
-              alignment: Alignment.center,
-              child: const Text(
-                "GOOGLE ADS BANNER",
-                style: TextStyle(color: Colors.white24, fontSize: 12),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+      for (int i = 0; i < _shuffledLetters.length; i++) {
+        double angle =
+            (i * 2 * math.pi / _shuffledLetters.length) - (math.pi / 2);
+        Offset p = Offset(
+          centerX + letterRadius * math.cos(angle),
+          centerY + letterRadius * math.sin(angle),
+        );
+        if ((pos - p).distance < 35 && !_selectedIndices.contains(i)) {
+          _selectedIndices.add(i);
+        }
+      }
+    });
   }
 
-  // Helper for buttons
-  Widget _buildCircleButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-    String? label,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-        ),
-        if (label != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white60,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ],
-    );
+  void _onPanEnd(GameLevel level) {
+    String word = _selectedIndices.map((i) => _shuffledLetters[i]).join("");
+    if (level.grid.any((e) => e['word'] == word) &&
+        !_foundWords.contains(word)) {
+      setState(() {
+        _foundWords.add(word);
+        _points += 10;
+      });
+      _checkLevelComplete(level);
+    }
+    setState(() {
+      _selectedIndices = [];
+      _currentDragPoint = null;
+    });
   }
 
-  // Grid Builder
+  // --- UI: GRID ---
+
   Widget _buildGrid(GameLevel level) {
+    int minX = level.cols, maxX = 0, minY = level.rows, maxY = 0;
+    for (var item in level.grid) {
+      String w = item['word'];
+      int x = item['x'], y = item['y'];
+      int endX = item['dir'] == 'h' ? x + w.length - 1 : x;
+      int endY = item['dir'] == 'v' ? y + w.length - 1 : y;
+      if (x < minX) minX = x;
+      if (endX > maxX) maxX = endX;
+      if (y < minY) minY = y;
+      if (endY > maxY) maxY = endY;
+    }
+
+    // Reduced padding from +2 to +1 to make grid items LARGER
+    int activeCols = (maxX - minX + 1) + 1;
+    int activeRows = (maxY - minY + 1) + 1;
+    int displaySide = math.max(activeCols, activeRows);
+    if (displaySide < 4) displaySide = 4;
+
+    int offsetX = minX - (displaySide - (maxX - minX + 1)) ~/ 2;
+    int offsetY = minY - (displaySide - (maxY - minY + 1)) ~/ 2;
+
     return Container(
-      padding: const EdgeInsets.all(25),
+      padding: const EdgeInsets.symmetric(horizontal: 15),
       child: AspectRatio(
         aspectRatio: 1,
         child: GridView.builder(
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: level.cols,
-            mainAxisSpacing: 5,
-            crossAxisSpacing: 5,
+            crossAxisCount: displaySide,
+            mainAxisSpacing: 6,
+            crossAxisSpacing: 6,
           ),
-          itemCount: level.rows * level.cols,
+          itemCount: displaySide * displaySide,
           itemBuilder: (ctx, idx) {
-            int x = idx % level.cols;
-            int y = idx ~/ level.cols;
-            String char = "";
-            bool isFound = false;
-            bool isCell = false;
-            bool isHinted = _hintedOffsets.contains(
-              Offset(x.toDouble(), y.toDouble()),
-            );
+            int x = (idx % displaySide) + offsetX;
+            int y = (idx ~/ displaySide) + offsetY;
+            String? char;
+            bool isVisible = false;
 
             for (var item in level.grid) {
-              for (int i = 0; i < item['word'].length; i++) {
-                if (x == (item['dir'] == 'h' ? item['x'] + i : item['x']) &&
-                    y == (item['dir'] == 'v' ? item['y'] + i : item['y'])) {
-                  isCell = true;
-                  char = item['word'][i];
-                  if (_foundWords.contains(item['word'])) isFound = true;
+              String w = item['word'];
+              for (int i = 0; i < w.length; i++) {
+                int cx = item['dir'] == 'h' ? item['x'] + i : item['x'];
+                int cy = item['dir'] == 'v' ? item['y'] + i : item['y'];
+                if (x == cx && y == cy) {
+                  char = w[i];
+                  if (_foundWords.contains(w) ||
+                      _hintedOffsets.contains(
+                        Offset(x.toDouble(), y.toDouble()),
+                      )) {
+                    isVisible = true;
+                  }
                 }
               }
             }
-            if (!isCell) return const SizedBox.shrink();
+            if (char == null) return const SizedBox.shrink();
             return Container(
               decoration: BoxDecoration(
-                color: isFound
+                color: isVisible
                     ? CityCipherTheme.primary
                     : Colors.white.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
                 child: Text(
-                  isFound || isHinted ? char : "",
+                  isVisible ? char : "",
                   style: TextStyle(
-                    color: isFound ? Colors.white : Colors.white30,
+                    color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: displaySide > 7 ? 16 : 24,
                   ),
                 ),
               ),
@@ -370,167 +255,182 @@ class _GameTabState extends State<GameTab> {
     );
   }
 
-  // Same update/pan end/intro methods as before...
-  void _updateSelection(Offset pos) {
-    setState(() {
-      _currentDragPoint = pos;
-      double size = 180; // Assuming your CustomPaint size is 180
-      double centerX = size / 2;
-      double centerY = size / 2;
+  @override
+  Widget build(BuildContext context) {
+    final level = allLevels[_currentLevelIdx];
 
-      // MUST MATCH THE PAINTER (size * 0.45)
-      double letterRadius = size * 0.45;
-
-      for (int i = 0; i < _shuffledLetters.length; i++) {
-        double angle =
-            (i * 2 * math.pi / _shuffledLetters.length) - (math.pi / 2);
-        Offset p = Offset(
-          centerX + letterRadius * math.cos(angle),
-          centerY + letterRadius * math.sin(angle),
-        );
-
-        // Increased hit-box distance to 35 for better touch response
-        if ((pos - p).distance < 35 && !_selectedIndices.contains(i)) {
-          _selectedIndices.add(i);
-        }
-      }
-    });
-  }
-
-  void _onPanEnd(GameLevel level) {
-    String word = _getCurrentWord();
-    if (level.grid.any((e) => e['word'] == word) &&
-        !_foundWords.contains(word)) {
-      setState(() {
-        _foundWords.add(word);
-        _points += 10;
-      });
-      if (_foundWords.length == level.grid.length) {
-        Future.delayed(const Duration(milliseconds: 600), () {
-          if (_currentLevelIdx < allLevels.length - 1) {
-            setState(() {
-              _currentLevelIdx++;
-              _initLevel();
-            });
-          } else {
-            //widget.onClose?.call();
-          }
-        });
-      }
-    }
-    setState(() {
-      _selectedIndices = [];
-      _currentDragPoint = null;
-    });
-  }
-
-  String _getCurrentWord() =>
-      _selectedIndices.map((i) => _shuffledLetters[i]).join("");
-
-  Widget _gameIntro() {
     return Scaffold(
       backgroundColor: CityCipherTheme.background,
-      body: Stack(
-        children: [
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    LucideIcons.star,
-                    size: 100,
-                    color: CityCipherTheme.primary,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(LucideIcons.x, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+            Row(
+              children: [
+                Text(
+                  "LEVEL ${_currentLevelIdx + 1}",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "CITY CIPHER",
-                    style: TextStyle(
-                      fontFamily: "Poppins",
-                      fontSize: 36,
-                      fontWeight: FontWeight.w600,
-                      color: CityCipherTheme.foreground,
-                      letterSpacing: 4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Decode the city's secrets and master the streets in this ultimate rewards-driven adventure.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: "Poppins",
-                      fontSize: 14,
-                      color: CityCipherTheme.mutedForeground,
-                      fontWeight: FontWeight.w600,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _showIntro = false;
-                      });
+                ),
+                const SizedBox(width: 15),
+                const FaIcon(
+                  FontAwesomeIcons.coins,
+                  size: 16,
+                  color: Colors.amber,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "$_points",
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              flex: 7,
+              child: Center(child: _buildGrid(level)),
+            ), // Increased flex for bigger grid
 
-                      //widget.onStartGame?.call();
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: CityCipherTheme.border.withValues(alpha: 0.5),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsetsGeometry.only(top: 12, bottom: 12),
-                        child: const Center(
-                          child: Text(
-                            "PLAY NOW",
-                            style: TextStyle(
-                              fontFamily: "Poppins",
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 1.2,
-                            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                _selectedIndices.map((i) => _shuffledLetters[i]).join(""),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 4,
+                ),
+              ),
+            ),
+
+            Expanded(
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 25),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildCircleBtn(Icons.shuffle, Colors.white, _shuffle),
+                    SizedBox(
+                      width: 160,
+                      height: 160,
+                      child: GestureDetector(
+                        onPanStart: (d) => _updateSelection(d.localPosition),
+                        onPanUpdate: (d) => _updateSelection(d.localPosition),
+                        onPanEnd: (d) => _onPanEnd(level),
+                        child: CustomPaint(
+                          painter: WheelPainter(
+                            letters: _shuffledLetters,
+                            selectedIndices: _selectedIndices,
+                            currentDragPoint: _currentDragPoint,
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const SizedBox(height: 20),
-                ],
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildCircleBtn(
+                          Icons.lightbulb,
+                          Colors.amber,
+                          _handleHint,
+                          "25",
+                        ),
+                        const SizedBox(height: 15),
+                        _buildCircleBtn(
+                          Icons.ads_click,
+                          Colors.blueAccent,
+                          _showAdDialog,
+                          "FREE",
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
+            const Spacer(),
+            Container(
+              height: 60,
+              width: double.infinity,
+              color: Colors.black45,
+              child: const Center(
+                child: Text(
+                  "AD BANNER",
+                  style: TextStyle(color: Colors.white24),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCircleBtn(
+    IconData icon,
+    Color col,
+    VoidCallback tap, [
+    String? label,
+  ]) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: tap,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white10,
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Icon(icon, color: col, size: 24),
           ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 16,
-            child: IconButton(
-              onPressed: () {},
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white10),
-                ),
-                child: const Icon(
-                  LucideIcons.chevronLeft,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-            ),
+        ),
+        if (label != null)
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white60, fontSize: 11),
+          ),
+      ],
+    );
+  }
+
+  void _showAdDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text(
+          "Need Points?",
+          style: TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CANCEL"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() => _points += 50);
+              Navigator.pop(context);
+            },
+            child: const Text("WATCH AD"),
           ),
         ],
       ),
@@ -556,61 +456,57 @@ class WheelPainter extends CustomPainter {
     double centerY = size.height / 2;
     Offset center = Offset(centerX, centerY);
 
-    // 1. REMOVED THE PLATE (Background Circle)
-    // The platePaint and drawCircle logic has been deleted for a "floating" look.
+    // --- DYNAMIC CALCULATIONS ---
+    int count = letters.length;
+    
+    // 1. Smaller circles if there are more letters
+    // 3-5 letters = ~28px, 8 letters = ~22px, 10 letters = ~18px
+    double circleRadius = count <= 5 ? 28 : (count <= 8 ? 22 : 18);
+    
+    // 2. Smaller font for more letters
+    double fontSize = count <= 5 ? 22 : (count <= 8 ? 18 : 14);
 
-    // 2. INCREASED SPACE (Padding)
-    // We increase the letterRadius to push letters further apart.
-    // 0.45 means letters are near the very edge of the widget's boundary.
-    double letterRadius = size.width * 0.45;
+    // 3. Keep letters at the edge
+    double letterRadius = size.width * 0.46;
 
     Paint linePaint = Paint()
       ..color = CityCipherTheme.primary.withOpacity(0.9)
-      ..strokeWidth = 10
+      ..strokeWidth = count > 7 ? 7 : 10 // Thinner lines for crowded wheels
       ..strokeCap = StrokeCap.round;
 
-    // Generate point positions for letters
-    List<Offset> pts = List.generate(letters.length, (i) {
-      double angle = (i * 2 * math.pi / letters.length) - (math.pi / 2);
-      return center +
-          Offset(
-            letterRadius * math.cos(angle),
-            letterRadius * math.sin(angle),
-          );
+    List<Offset> pts = List.generate(count, (i) {
+      double angle = (i * 2 * math.pi / count) - (math.pi / 2);
+      return center + Offset(
+        letterRadius * math.cos(angle),
+        letterRadius * math.sin(angle),
+      );
     });
 
-    // 3. DRAW CONNECTING LINES
+    // Draw lines
     for (int i = 0; i < selectedIndices.length; i++) {
       if (i + 1 < selectedIndices.length) {
-        canvas.drawLine(
-          pts[selectedIndices[i]],
-          pts[selectedIndices[i + 1]],
-          linePaint,
-        );
+        canvas.drawLine(pts[selectedIndices[i]], pts[selectedIndices[i + 1]], linePaint);
       } else if (currentDragPoint != null) {
-        // Line from the last selected letter to your finger
         canvas.drawLine(pts[selectedIndices[i]], currentDragPoint!, linePaint);
       }
     }
 
-    // 4. DRAW LETTERS
+    // Draw Letters
     for (int i = 0; i < pts.length; i++) {
       bool isSelected = selectedIndices.contains(i);
 
-      // Draw the white or red circle behind the letter
       canvas.drawCircle(
         pts[i],
-        28, // Slightly larger letter circles
+        circleRadius,
         Paint()..color = isSelected ? CityCipherTheme.primary : Colors.white,
       );
 
-      // Centered Text
       final tp = TextPainter(
         text: TextSpan(
           text: letters[i],
           style: TextStyle(
             color: isSelected ? Colors.white : Colors.black,
-            fontSize: 20, // Slightly larger font
+            fontSize: fontSize,
             fontWeight: FontWeight.bold,
           ),
         ),
