@@ -1,12 +1,16 @@
+import 'package:city_cipher/core/providers/game_provider.dart';
+import 'package:city_cipher/main.dart';
+import 'package:city_cipher/models/gameConfig/game_config_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'dart:math' as math;
+import '../core/enums/app_enums.dart';
+import '../core/providers/api_service_provider.dart';
 import '../core/providers/game_config_provider.dart';
 import '../core/theme.dart';
-import '../models/gameConfig/game_config_model.dart';
-import 'game_data.dart';
+import '../models/game/game_level_model.dart';
 
 class GameTab extends ConsumerStatefulWidget {
   const GameTab({super.key});
@@ -16,9 +20,9 @@ class GameTab extends ConsumerStatefulWidget {
 }
 
 class _GameTabState extends ConsumerState<GameTab> {
-  int _currentLevelIdx = 0;
-  int _points = 100;
-  int _hintCost = 0;
+  AppState gameState = AppState.loading;
+
+  List<GameLevel> allLevels = [];
 
   List<int> _selectedIndices = [];
   Offset? _currentDragPoint;
@@ -29,44 +33,55 @@ class _GameTabState extends ConsumerState<GameTab> {
   @override
   void initState() {
     super.initState();
-    _initLevel();
-    _initializeConfig();
+    fetchLevels();
   }
 
-  void _initializeConfig() {
-    final config = ref.read(gameConfigProvider);
-    final rankConfig = config?.getRankByLevel(1);
+  Future<void> fetchLevels() async {
+    setState(() {
+      gameState = AppState.loading;
+    });
 
-    if (rankConfig != null) {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final userGameData = ref.read(gameProvider);
+      final response = await apiService.getGameLevels(
+        currentLevel: userGameData.currentLevel,
+      );
+
       setState(() {
-        _currentLevelIdx = 0;
-        _points = 0;
-        _hintCost = rankConfig.hintCost;
+        if (response.success) {
+          allLevels = response.data;
+          gameState = AppState.loaded;
+        } else {
+          gameState = AppState.error;
+        }
+      });
+      _initLevel(userGameData);
+    } catch (e) {
+      setState(() {
+        gameState = AppState.error;
       });
     }
   }
 
-  void _initLevel() {
-    final level = allLevels[_currentLevelIdx];
+  void _initLevel(GameState userGameData) {
+    final level = allLevels[userGameData.currentLevel - 1];
     _shuffledLetters = List.from(level.letters);
     _shuffledLetters.shuffle();
     _foundWords = [];
-    _hintedOffsets = List.from(level.preFilled ?? []);
+    _hintedOffsets = List.from(level.preFilled);
     _selectedIndices = [];
   }
 
   void _shuffle() => setState(() => _shuffledLetters.shuffle());
 
-  // --- LOGIC: COMPLETION CHECK ---
-
-  void _checkLevelComplete(GameLevel level) {
-    // 1. Get all unique coordinate points that need to be filled
+  void _checkLevelComplete(GameLevel level, GameState userGameData, RankConfig rankConfig) {
     Set<Offset> requiredPoints = {};
     for (var item in level.grid) {
-      String word = item['word'];
+      String word = item.word;
       for (int i = 0; i < word.length; i++) {
-        int cx = item['dir'] == 'h' ? item['x'] + i : item['x'];
-        int cy = item['dir'] == 'v' ? item['y'] + i : item['y'];
+        int cx = item.dir == 'h' ? item.x + i : item.x;
+        int cy = item.dir == 'v' ? item.y + i : item.y;
         requiredPoints.add(Offset(cx.toDouble(), cy.toDouble()));
       }
     }
@@ -74,47 +89,45 @@ class _GameTabState extends ConsumerState<GameTab> {
     // 2. Check if every point is covered by either a found word or a hint
     bool allFilled = requiredPoints.every((p) {
       bool coveredByWord = level.grid.any(
-        (item) => _foundWords.contains(item['word']) && _isPointInWord(p, item),
+        (item) => _foundWords.contains(item.word) && _isPointInWord(p, item),
       );
       bool coveredByHint = _hintedOffsets.contains(p);
       return coveredByWord || coveredByHint;
     });
 
     if (allFilled) {
-      _proceedToNextLevel();
+      _proceedToNextLevel(userGameData, rankConfig);
     }
   }
 
-  void _proceedToNextLevel() {
+  void _proceedToNextLevel(GameState userGameData, RankConfig rankConfig) {
     Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted && _currentLevelIdx < allLevels.length - 1) {
-        setState(() {
-          _currentLevelIdx++;
-          _initLevel();
-        });
+      int currentLevelIdx = userGameData.currentLevel - 1;
+      if (mounted && currentLevelIdx < allLevels.length - 1) {
+        ref.read(gameProvider.notifier).addPoints(rankConfig.rewardPerLevel);
+         ref.read(gameProvider.notifier).increaseLevel();
+        _initLevel(userGameData);
       }
     });
   }
 
-  // --- LOGIC: HINTS ---
-
-  void _handleHint() {
-    if (_points >= 25) {
-      _useHint();
+  void _handleHint(GameState userGameData, RankConfig rankConfig) {
+    if (userGameData.earnedPoints >= rankConfig.hintCost) {
+      _useHint(userGameData, rankConfig);
     } else {
       _showAdDialog();
     }
   }
 
-  void _useHint() {
-    final level = allLevels[_currentLevelIdx];
+  void _useHint(GameState userGameData, RankConfig rankConfig) {
+    final level = allLevels[userGameData.currentLevel - 1];
     List<Offset> hiddenCoords = [];
 
     for (var item in level.grid) {
-      String word = item['word'];
+      String word = item.word;
       for (int i = 0; i < word.length; i++) {
-        int cx = item['dir'] == 'h' ? item['x'] + i : item['x'];
-        int cy = item['dir'] == 'v' ? item['y'] + i : item['y'];
+        int cx = item.dir == 'h' ? item.x + i : item.x;
+        int cy = item.dir == 'v' ? item.y + i : item.y;
         Offset p = Offset(cx.toDouble(), cy.toDouble());
 
         bool isVisible =
@@ -122,8 +135,7 @@ class _GameTabState extends ConsumerState<GameTab> {
             _hintedOffsets.contains(p) ||
             level.grid.any(
               (other) =>
-                  _foundWords.contains(other['word']) &&
-                  _isPointInWord(p, other),
+                  _foundWords.contains(other.word) && _isPointInWord(p, other),
             );
 
         if (!isVisible && !hiddenCoords.contains(p)) hiddenCoords.add(p);
@@ -132,26 +144,24 @@ class _GameTabState extends ConsumerState<GameTab> {
 
     if (hiddenCoords.isNotEmpty) {
       setState(() {
-        _points -= 25;
         _hintedOffsets.add(
           hiddenCoords[math.Random().nextInt(hiddenCoords.length)],
         );
       });
-      _checkLevelComplete(level);
+      ref.read(gameProvider.notifier).deductPoints(rankConfig.hintCost);
+      _checkLevelComplete(level, userGameData, rankConfig);
     }
   }
 
-  bool _isPointInWord(Offset p, Map<String, dynamic> item) {
-    String word = item['word'];
+  bool _isPointInWord(Offset p, WordPlacement item) {
+    String word = item.word;
     for (int i = 0; i < word.length; i++) {
-      int cx = item['dir'] == 'h' ? item['x'] + i : item['x'];
-      int cy = item['dir'] == 'v' ? item['y'] + i : item['y'];
+      int cx = item.dir == 'h' ? item.x + i : item.x;
+      int cy = item.dir == 'v' ? item.y + i : item.y;
       if (p.dx == cx && p.dy == cy) return true;
     }
     return false;
   }
-
-  // --- LOGIC: INTERACTION ---
 
   void _updateSelection(Offset pos) {
     setState(() {
@@ -175,15 +185,13 @@ class _GameTabState extends ConsumerState<GameTab> {
     });
   }
 
-  void _onPanEnd(GameLevel level) {
+  void _onPanEnd(GameLevel level, GameState userGameData, RankConfig rankConfig) {
     String word = _selectedIndices.map((i) => _shuffledLetters[i]).join("");
-    if (level.grid.any((e) => e['word'] == word) &&
-        !_foundWords.contains(word)) {
+    if (level.grid.any((e) => e.word == word) && !_foundWords.contains(word)) {
       setState(() {
         _foundWords.add(word);
-        _points += 10;
       });
-      _checkLevelComplete(level);
+      _checkLevelComplete(level, userGameData, rankConfig);
     }
     setState(() {
       _selectedIndices = [];
@@ -191,15 +199,13 @@ class _GameTabState extends ConsumerState<GameTab> {
     });
   }
 
-  // --- UI: GRID ---
-
   Widget _buildGrid(GameLevel level) {
     int minX = level.cols, maxX = 0, minY = level.rows, maxY = 0;
     for (var item in level.grid) {
-      String w = item['word'];
-      int x = item['x'], y = item['y'];
-      int endX = item['dir'] == 'h' ? x + w.length - 1 : x;
-      int endY = item['dir'] == 'v' ? y + w.length - 1 : y;
+      String w = item.word;
+      int x = item.x, y = item.y;
+      int endX = item.dir == 'h' ? x + w.length - 1 : x;
+      int endY = item.dir == 'v' ? y + w.length - 1 : y;
       if (x < minX) minX = x;
       if (endX > maxX) maxX = endX;
       if (y < minY) minY = y;
@@ -234,10 +240,10 @@ class _GameTabState extends ConsumerState<GameTab> {
             bool isVisible = false;
 
             for (var item in level.grid) {
-              String w = item['word'];
+              String w = item.word;
               for (int i = 0; i < w.length; i++) {
-                int cx = item['dir'] == 'h' ? item['x'] + i : item['x'];
-                int cy = item['dir'] == 'v' ? item['y'] + i : item['y'];
+                int cx = item.dir == 'h' ? item.x + i : item.x;
+                int cy = item.dir == 'v' ? item.y + i : item.y;
                 if (x == cx && y == cy) {
                   char = w[i];
                   if (_foundWords.contains(w) ||
@@ -276,8 +282,15 @@ class _GameTabState extends ConsumerState<GameTab> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(gameConfigProvider);
-    final level = allLevels[_currentLevelIdx];
+    if (allLevels.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final userGameData = ref.watch(gameProvider);
+    final config = ref.watch(gameConfigProvider);
+    final rankConfig = config?.getRankByLevel(userGameData.currentLevel);
+
+    final level = allLevels[userGameData.currentLevel - 1];
 
     return Scaffold(
       backgroundColor: CityCipherTheme.background,
@@ -289,12 +302,15 @@ class _GameTabState extends ConsumerState<GameTab> {
           children: [
             IconButton(
               icon: const Icon(LucideIcons.x, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => MainNavigation()),
+              ),
             ),
             Row(
               children: [
                 Text(
-                  "LEVEL ${_currentLevelIdx + 1}",
+                  "LEVEL ${userGameData.currentLevel}",
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -308,7 +324,7 @@ class _GameTabState extends ConsumerState<GameTab> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  "$_points",
+                  "${userGameData.earnedPoints}",
                   style: const TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ],
@@ -319,10 +335,7 @@ class _GameTabState extends ConsumerState<GameTab> {
       body: SafeArea(
         child: Column(
           children: [
-            Expanded(
-              flex: 7,
-              child: Center(child: _buildGrid(level)),
-            ), // Increased flex for bigger grid
+            Expanded(flex: 7, child: Center(child: _buildGrid(level))),
 
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
@@ -351,7 +364,7 @@ class _GameTabState extends ConsumerState<GameTab> {
                       child: GestureDetector(
                         onPanStart: (d) => _updateSelection(d.localPosition),
                         onPanUpdate: (d) => _updateSelection(d.localPosition),
-                        onPanEnd: (d) => _onPanEnd(level),
+                        onPanEnd: (d) => _onPanEnd(level, userGameData, rankConfig!),
                         child: CustomPaint(
                           painter: WheelPainter(
                             letters: _shuffledLetters,
@@ -367,8 +380,10 @@ class _GameTabState extends ConsumerState<GameTab> {
                         _buildCircleBtn(
                           Icons.lightbulb,
                           Colors.amber,
-                          _handleHint,
-                          _hintCost.toString(),
+                          () {
+                            _handleHint(userGameData, rankConfig!);
+                          },
+                          rankConfig?.hintCost.toString(),
                         ),
                         const SizedBox(height: 15),
                         _buildCircleBtn(
@@ -447,7 +462,6 @@ class _GameTabState extends ConsumerState<GameTab> {
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() => _points += 50);
               Navigator.pop(context);
             },
             child: const Text("WATCH AD"),

@@ -80,8 +80,12 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.copyWith(earnedPoints: state.earnedPoints + points);
   }
 
-  void setLevel(int level) {
-    state = state.copyWith(currentLevel: level);
+  void deductPoints(int points) {
+    state = state.copyWith(earnedPoints: state.earnedPoints - points);
+  }
+
+  void increaseLevel() {
+    state = state.copyWith(currentLevel: state.currentLevel + 1);
   }
 
   void addFoundWord(String word) {

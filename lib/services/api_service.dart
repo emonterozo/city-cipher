@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/providers/auth_provider.dart';
+import '../models/game/game_level_response.dart';
 import '../models/gameConfig/game_config_response.dart';
 import '../models/promotion/promotion_response.dart';
 import '../models/reward/reward_response.dart';
@@ -296,5 +297,25 @@ class ApiService {
     }
 
     return null;
+  }
+
+  Future<GameLevelResponse> getGameLevels({
+    int currentLevel = 1,
+    int limit = 10,
+  }) async {
+    final queryParams = {
+      "current_level": currentLevel.toString(),
+      "limit": limit.toString(),
+    };
+
+    final uri = Uri.parse(
+      "$baseUrl/api/game/levels",
+    ).replace(queryParameters: queryParams);
+
+    final response = await http.get(uri, headers: _headers);
+
+    final jsonData = jsonDecode(response.body);
+
+    return GameLevelResponse.fromJson(jsonData);
   }
 }
