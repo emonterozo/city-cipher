@@ -1,21 +1,31 @@
 import 'dart:convert';
 import 'package:city_cipher/core/enums/app_enums.dart';
+import 'package:city_cipher/models/user/game_data_response.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../core/providers/auth_provider.dart';
+import '../models/gameConfig/game_config_response.dart';
 import '../models/promotion/promotion_response.dart';
 import '../models/reward/reward_response.dart';
 import '../models/store/store_response.dart';
 import '../models/user/registration_response.dart';
 
 class ApiService {
+  //final Ref ref;
+
+  //ApiService(this.ref);
+
   final String baseUrl = "https://9c88-136-158-61-7.ngrok-free.app";
   final String key = "7bEeSUU1GjGEGXENyvOVl+pD46zdipW/nCXLNnokC10=";
 
   Map<String, String> get _headers {
+    //final token = ref.read(authProvider).accessToken;
     return {
       "Content-Type": "application/json",
       "Accept": "application/json",
       "x-api-key": key,
+      //"authorization": "Bearer $token",
     };
   }
 
@@ -210,5 +220,37 @@ class ApiService {
     final jsonData = jsonDecode(response.body);
 
     return ResetPasswordResponse.fromJson(jsonData);
+  }
+
+  Future<GameConfigResponse> getGameConfigs({
+    int limit = 1,
+    String configVersion = "1.0.0",
+    bool isActive = true,
+  }) async {
+    final queryParams = {
+      "limit": limit.toString(),
+      "config_version": configVersion,
+      "is_active": isActive.toString(),
+    };
+
+    final uri = Uri.parse(
+      "$baseUrl/api/game-configs",
+    ).replace(queryParameters: queryParams);
+
+    final response = await http.get(uri, headers: _headers);
+
+    final jsonData = jsonDecode(response.body);
+
+    return GameConfigResponse.fromJson(jsonData);
+  }
+
+  Future<GameDataResponse> getUserGameData() async {
+    final uri = Uri.parse("$baseUrl/api/game/me");
+
+    final response = await http.get(uri, headers: _headers);
+
+    final jsonData = jsonDecode(response.body);
+
+    return GameDataResponse.fromJson(jsonData);
   }
 }

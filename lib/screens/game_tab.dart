@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'dart:math' as math;
+import '../core/providers/game_config_provider.dart';
 import '../core/theme.dart';
+import '../models/gameConfig/game_config_model.dart';
 import 'game_data.dart';
 
-class GameTab extends StatefulWidget {
+class GameTab extends ConsumerStatefulWidget {
   const GameTab({super.key});
 
   @override
-  State<GameTab> createState() => _GameTabState();
+  ConsumerState<GameTab> createState() => _GameTabState();
 }
 
-class _GameTabState extends State<GameTab> {
+class _GameTabState extends ConsumerState<GameTab> {
   int _currentLevelIdx = 0;
   int _points = 100;
+  int _hintCost = 0;
+
   List<int> _selectedIndices = [];
   Offset? _currentDragPoint;
   List<String> _foundWords = [];
@@ -25,6 +30,20 @@ class _GameTabState extends State<GameTab> {
   void initState() {
     super.initState();
     _initLevel();
+    _initializeConfig();
+  }
+
+  void _initializeConfig() {
+    final config = ref.read(gameConfigProvider);
+    final rankConfig = config?.getRankByLevel(1);
+
+    if (rankConfig != null) {
+      setState(() {
+        _currentLevelIdx = 0;
+        _points = 0;
+        _hintCost = rankConfig.hintCost;
+      });
+    }
   }
 
   void _initLevel() {
@@ -257,6 +276,7 @@ class _GameTabState extends State<GameTab> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(gameConfigProvider);
     final level = allLevels[_currentLevelIdx];
 
     return Scaffold(
@@ -348,7 +368,7 @@ class _GameTabState extends State<GameTab> {
                           Icons.lightbulb,
                           Colors.amber,
                           _handleHint,
-                          "25",
+                          _hintCost.toString(),
                         ),
                         const SizedBox(height: 15),
                         _buildCircleBtn(
@@ -458,11 +478,11 @@ class WheelPainter extends CustomPainter {
 
     // --- DYNAMIC CALCULATIONS ---
     int count = letters.length;
-    
+
     // 1. Smaller circles if there are more letters
     // 3-5 letters = ~28px, 8 letters = ~22px, 10 letters = ~18px
     double circleRadius = count <= 5 ? 28 : (count <= 8 ? 22 : 18);
-    
+
     // 2. Smaller font for more letters
     double fontSize = count <= 5 ? 22 : (count <= 8 ? 18 : 14);
 
@@ -471,21 +491,28 @@ class WheelPainter extends CustomPainter {
 
     Paint linePaint = Paint()
       ..color = CityCipherTheme.primary.withOpacity(0.9)
-      ..strokeWidth = count > 7 ? 7 : 10 // Thinner lines for crowded wheels
+      ..strokeWidth = count > 7
+          ? 7
+          : 10 // Thinner lines for crowded wheels
       ..strokeCap = StrokeCap.round;
 
     List<Offset> pts = List.generate(count, (i) {
       double angle = (i * 2 * math.pi / count) - (math.pi / 2);
-      return center + Offset(
-        letterRadius * math.cos(angle),
-        letterRadius * math.sin(angle),
-      );
+      return center +
+          Offset(
+            letterRadius * math.cos(angle),
+            letterRadius * math.sin(angle),
+          );
     });
 
     // Draw lines
     for (int i = 0; i < selectedIndices.length; i++) {
       if (i + 1 < selectedIndices.length) {
-        canvas.drawLine(pts[selectedIndices[i]], pts[selectedIndices[i + 1]], linePaint);
+        canvas.drawLine(
+          pts[selectedIndices[i]],
+          pts[selectedIndices[i + 1]],
+          linePaint,
+        );
       } else if (currentDragPoint != null) {
         canvas.drawLine(pts[selectedIndices[i]], currentDragPoint!, linePaint);
       }

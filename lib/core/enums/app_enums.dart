@@ -31,3 +31,21 @@ enum RewardRuleType {
     );
   }
 }
+
+enum Rank {
+  explorer('explorer'),
+  local('local'),
+  elite('elite'),
+  expert('expert'),
+  unknown('UNKNOWN');
+
+  final String value;
+  const Rank(this.value);
+
+  static Rank fromString(String value) {
+    return Rank.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => Rank.unknown,
+    );
+  }
+}

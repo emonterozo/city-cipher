@@ -1,6 +1,7 @@
 import 'package:city_cipher/screens/store_list_screen.dart';
 import 'package:city_cipher/shared/widgets/store_card.dart';
 import 'package:city_cipher/shared/widgets/store_card_loading_grid.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';

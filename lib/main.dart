@@ -1,13 +1,20 @@
+import 'dart:convert';
+
+import 'package:city_cipher/models/auth/auth_model.dart';
 import 'package:city_cipher/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'core/enums/app_enums.dart';
 import 'core/providers/auth_provider.dart';
+import 'core/providers/game_config_provider.dart';
+import 'models/gameConfig/game_config_model.dart';
 import 'screens/game_tab.dart';
 import 'screens/home_tab.dart';
 import 'screens/rewards_tab.dart';
 import 'core/theme.dart';
+import 'services/api_service.dart';
 
 void main() => runApp(const ProviderScope(child: CityCipherApp()));
 
@@ -31,22 +38,34 @@ class MainNavigation extends ConsumerStatefulWidget {
 
 class _MainNavigationState extends ConsumerState<MainNavigation> {
   int _currentTabIndex = 0;
-
   late final List<Widget> _pages = [const HomeTab(), const RewardsTab()];
+  final ApiService apiService = ApiService();
+  AppState appState = AppState.loading;
+
+  void loadGameConfig() {
+    ref.read(gameConfigProvider.notifier).loadConfig();
+  }
+
+  void loadUserGameState() {
+    final auth = ref.read(authProvider);
+    //fetch game provider
+    print("test ${auth.accessToken}");
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadGameConfig();
+    Future.microtask(() async {
+      await ref.read(authProvider.notifier).loadAuth();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     ref.listen(authProvider, (prev, next) {
       if (next.isAuthenticated) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => GameTab()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => LoginScreen()),
-        );
+        loadUserGameState();
       }
     });
     return Scaffold(
@@ -68,10 +87,21 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
         ),
         child: FloatingActionButton(
           onPressed: () async {
-            //final storage = FlutterSecureStorage();
-            //await storage.deleteAll();
+            // final storage = FlutterSecureStorage();
+            // await storage.deleteAll();
 
-            await ref.read(authProvider.notifier).loadAuth();
+            final auth = ref.read(authProvider);
+            if (auth.isAuthenticated) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => GameTab()),
+              );
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => LoginScreen()),
+              );
+            }
           },
           backgroundColor: CityCipherTheme.primary,
           elevation: 0,
