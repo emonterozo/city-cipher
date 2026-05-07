@@ -67,16 +67,19 @@ class RankConfig {
 class GlobalSettings {
   final int pointsToPesoRatio;
   final int startingPoints;
+  final int totalLevels;
 
   GlobalSettings({
     required this.pointsToPesoRatio,
     required this.startingPoints,
+    required this.totalLevels,
   });
 
   factory GlobalSettings.fromJson(Map<String, dynamic> json) {
     return GlobalSettings(
       pointsToPesoRatio: json['points_to_peso_ratio'] ?? 0,
       startingPoints: json['starting_points'] ?? 0,
+      totalLevels: json['total_levels'] ?? 0,
     );
   }
 
@@ -84,6 +87,7 @@ class GlobalSettings {
     return {
       'points_to_peso_ratio': pointsToPesoRatio,
       'starting_points': startingPoints,
+      'totalLevels': totalLevels,
     };
   }
 }

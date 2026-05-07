@@ -2,6 +2,7 @@ import 'package:city_cipher/screens/reward_details_screen.dart';
 import 'package:city_cipher/shared/widgets/reward_card_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -9,22 +10,21 @@ import 'package:city_cipher/core/theme.dart';
 import 'package:shimmer/shimmer.dart';
 import '../core/link_service.dart';
 import '../core/enums/app_enums.dart';
+import '../core/providers/api_service_provider.dart';
 import '../core/utils/time_utils.dart';
 import '../models/reward/reward_model.dart';
 import '../models/store/store_model.dart';
-import '../services/api_service.dart';
 import '../shared/widgets/error_state_view.dart';
 
-class StoreDetailsScreen extends StatefulWidget {
+class StoreDetailsScreen extends ConsumerStatefulWidget {
   final String storeId;
   const StoreDetailsScreen({super.key, required this.storeId});
 
   @override
-  State<StoreDetailsScreen> createState() => _StoreDetailsScreenState();
+  ConsumerState<StoreDetailsScreen> createState() => _StoreDetailsScreenState();
 }
 
-class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
-  final ApiService apiService = ApiService();
+class _StoreDetailsScreenState extends ConsumerState<StoreDetailsScreen> {
   Store? store;
   AppState storeState = AppState.loading;
 
@@ -40,6 +40,7 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
     });
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.getStoreDetails(widget.storeId);
 
       setState(() {
@@ -71,6 +72,7 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
     _page++;
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.getStoreRewards(
         page: _page,
         limit: 10,

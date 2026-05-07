@@ -3,23 +3,24 @@ import 'package:city_cipher/screens/password_setting_screen.dart';
 import 'package:city_cipher/screens/verification_screen.dart';
 import 'package:city_cipher/shared/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../core/enums/app_enums.dart';
+import '../core/providers/api_service_provider.dart';
 import '../core/theme.dart';
-import '../services/api_service.dart';
 import '../shared/utils/toast.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
+class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   String _mobileNumber = '';
 
-  final ApiService apiService = ApiService();
   AppState forgotPasswordState = AppState.initialize;
 
   Future<void> forgotPassword() async {
@@ -28,6 +29,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.forgotPassword(_mobileNumber);
 
       if (!mounted) return;

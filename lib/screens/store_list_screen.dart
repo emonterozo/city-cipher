@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:city_cipher/core/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../core/enums/app_enums.dart';
+import '../core/providers/api_service_provider.dart';
 import '../models/store/store_model.dart';
-import '../services/api_service.dart';
 import '../shared/widgets/custom_app_bar.dart';
 import '../shared/widgets/store_card.dart';
 
-class StoreListScreen extends StatefulWidget {
+class StoreListScreen extends ConsumerStatefulWidget {
   const StoreListScreen({super.key});
 
   @override
-  State<StoreListScreen> createState() => _StoreListScreenState();
+  ConsumerState<StoreListScreen> createState() => _StoreListScreenState();
 }
 
-class _StoreListScreenState extends State<StoreListScreen> {
-  final ApiService apiService = ApiService();
+class _StoreListScreenState extends ConsumerState<StoreListScreen> {
   int _page = 1;
   bool _isLoadingMore = false;
   bool _hasMore = true;
@@ -38,6 +38,7 @@ class _StoreListScreenState extends State<StoreListScreen> {
     });
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.getStores(
         page: _page,
         limit: 10,
@@ -73,6 +74,7 @@ class _StoreListScreenState extends State<StoreListScreen> {
     _page++;
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.getStores(
         page: _page,
         limit: 10,

@@ -1,22 +1,24 @@
 import 'package:city_cipher/screens/login_screen.dart';
 import 'package:city_cipher/shared/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../core/enums/app_enums.dart';
+import '../core/providers/api_service_provider.dart';
 import '../core/theme.dart';
 import '../core/validators/password_validators.dart';
-import '../services/api_service.dart';
 import '../shared/utils/toast.dart';
 
-class PasswordSettingScreen extends StatefulWidget {
+class PasswordSettingScreen extends ConsumerStatefulWidget {
   final String id;
   const PasswordSettingScreen({super.key, required this.id});
 
   @override
-  State<PasswordSettingScreen> createState() => _PasswordSettingScreenState();
+  ConsumerState<PasswordSettingScreen> createState() =>
+      _PasswordSettingScreenState();
 }
 
-class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
+class _PasswordSettingScreenState extends ConsumerState<PasswordSettingScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -25,7 +27,6 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
   PasswordInput _password = const PasswordInput.pure();
   String _confirmPassword = '';
 
-  final ApiService apiService = ApiService();
   AppState resetPasswordState = AppState.initialize;
 
   Future<void> resetPassword() async {
@@ -34,6 +35,7 @@ class _PasswordSettingScreenState extends State<PasswordSettingScreen> {
     });
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.resetPassword(
         widget.id,
         _password.value,

@@ -6,7 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/enums/app_enums.dart';
+import '../core/providers/api_service_provider.dart';
 import '../core/providers/auth_provider.dart';
+import '../core/providers/game_provider.dart';
 import '../services/api_service.dart';
 import '../shared/utils/toast.dart';
 import '../shared/widgets/custom_app_bar.dart';
@@ -34,7 +36,6 @@ class VerificationScreen extends ConsumerStatefulWidget {
 }
 
 class _VerificationScreenState extends ConsumerState<VerificationScreen> {
-  final ApiService apiService = ApiService();
   AppState resendState = AppState.initialize;
   AppState verifyState = AppState.initialize;
   final List<TextEditingController> _controllers = List.generate(
@@ -59,6 +60,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       setState(() {
         resendState = AppState.loading;
       });
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.sendOtp(widget.id, widget.type);
       setState(() {
         resendState = AppState.loaded;
@@ -89,6 +91,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       setState(() {
         verifyState = AppState.loading;
       });
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.verifyOtp(widget.id, _otp, widget.type);
       setState(() {
         verifyState = AppState.loaded;
@@ -103,7 +106,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 accessToken: response.accessToken,
                 refreshToken: response.refreshToken,
               );
-          //fetch game provider
+          ref.read(gameProvider.notifier).loadGameData();
         }
 
         widget.onSuccess?.call();

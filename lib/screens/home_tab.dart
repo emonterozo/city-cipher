@@ -1,28 +1,31 @@
+import 'package:city_cipher/core/providers/game_provider.dart';
+import 'package:city_cipher/models/gameConfig/game_config_model.dart';
 import 'package:city_cipher/screens/store_list_screen.dart';
 import 'package:city_cipher/shared/widgets/store_card.dart';
 import 'package:city_cipher/shared/widgets/store_card_loading_grid.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../core/link_service.dart';
 import '../core/enums/app_enums.dart';
+import '../core/providers/api_service_provider.dart';
+import '../core/providers/game_config_provider.dart';
 import '../models/promotion/promotion_model.dart';
 import '../models/store/store_model.dart';
 import '../core/theme.dart';
 import '../core/app_typography.dart';
-import '../services/api_service.dart';
 import '../shared/widgets/error_state_view.dart';
 
-class HomeTab extends StatefulWidget {
+class HomeTab extends ConsumerStatefulWidget {
   const HomeTab({super.key});
 
   @override
-  State<HomeTab> createState() => _HomeTabState();
+  ConsumerState<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> {
-  final ApiService apiService = ApiService();
+class _HomeTabState extends ConsumerState<HomeTab> {
   List<Promotion> promotions = [];
   AppState promotionState = AppState.loading;
 
@@ -38,6 +41,7 @@ class _HomeTabState extends State<HomeTab> {
     });
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.getPromotions();
 
       setState(() {
@@ -61,6 +65,7 @@ class _HomeTabState extends State<HomeTab> {
     });
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.getStores(limit: 4);
 
       setState(() {
@@ -87,13 +92,16 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   Widget build(BuildContext context) {
+    final userGameData = ref.watch(gameProvider);
+    final gameConfig = ref.read(gameConfigProvider);
+
     return Scaffold(
       backgroundColor: CityCipherTheme.background,
       appBar: _AppHeader(),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
         children: [
-          _profileCard(),
+          _profileCard(userGameData, gameConfig),
           const SizedBox(height: 30),
           Text(
             "Featured Deals",
@@ -296,45 +304,36 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _profileCard() {
-    final int currentUserLevel = 125;
-    final int maxGameLevel = 1000;
-    final String pointsLabel = "23,450";
+  Widget _profileCard(GameState userGameData, GameConfig? gameConfig) {
+    final int currentUserLevel = userGameData.currentLevel;
+    final rankConfig = gameConfig?.getRankByLevel(currentUserLevel);
+
+    final int maxGameLevel = gameConfig?.globalSettings.totalLevels ?? 0;
+    final String pointsLabel = NumberFormat.decimalPattern().format(
+      userGameData.earnedPoints,
+    );
     const int step = 50;
     const int totalSegments = 5;
 
     double progress;
     String leftLabel;
     String rightLabel;
-    String tierName;
+    String currentRank = rankConfig?.rank.value ?? '';
 
-    // 1. Determine Tier Name
-    if (currentUserLevel < 500) {
-      tierName = "Starter";
-    } else if (currentUserLevel < 1000) {
-      tierName = "Novice";
-    } else {
-      tierName = "Expert";
-    }
-
-    // 2. Determine Labels and Progress (50-level chunks)
     if (currentUserLevel >= maxGameLevel) {
       leftLabel = "Lvl $maxGameLevel";
       rightLabel = "MAX";
       progress = 1.0;
     } else {
-      // Finds the lower bound (e.g., if level is 125, floor is 100)
       int floorLevel = (currentUserLevel ~/ step) * step;
       int ceilingLevel = floorLevel + step;
 
       leftLabel = "Lvl $currentUserLevel";
       rightLabel = "Lvl $ceilingLevel";
 
-      // Calculate progress within that 50-level chunk
       progress = ((currentUserLevel - floorLevel) / step).clamp(0.0, 1.0);
     }
 
-    // Calculate filled segments (e.g., if progress is 0.5, 2.5 rounded is 3 bars)
     int filledSegments = (progress * totalSegments).round();
 
     return IntrinsicHeight(
@@ -456,12 +455,12 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      tierName.toUpperCase(),
+                      currentRank.toUpperCase(),
                       style: const TextStyle(
                         color: CityCipherTheme.foreground,
                         fontFamily: "Poppins",
                         fontWeight: FontWeight.w800,
-                        fontSize: 14,
+                        fontSize: 12,
                         letterSpacing: 0.5,
                       ),
                     ),

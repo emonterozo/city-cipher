@@ -7,9 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../core/enums/app_enums.dart';
+import '../core/providers/api_service_provider.dart' show apiServiceProvider;
 import '../core/providers/auth_provider.dart';
+import '../core/providers/game_provider.dart';
 import '../core/theme.dart';
-import '../services/api_service.dart';
 import '../shared/utils/toast.dart';
 import 'game_tab.dart';
 
@@ -25,7 +26,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String _mobileNumber = '';
   String _password = '';
 
-  final ApiService apiService = ApiService();
   AppState loginState = AppState.initialize;
 
   Future<void> login() async {
@@ -34,6 +34,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.login(_mobileNumber, _password);
 
       if (!mounted) return;
@@ -87,7 +88,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 accessToken: response.accessToken ?? '',
                 refreshToken: response.refreshToken ?? '',
               );
-          //fetch game provider
+          ref.read(gameProvider.notifier).loadGameData();
           if (!mounted) return;
           Navigator.pushReplacement(
             context,

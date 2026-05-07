@@ -1,4 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+
+import 'api_service_provider.dart';
 
 class GameState {
   final int earnedPoints;
@@ -46,11 +49,28 @@ class GameState {
 }
 
 final gameProvider = StateNotifierProvider<GameNotifier, GameState>(
-  (ref) => GameNotifier(),
+  (ref) => GameNotifier(ref),
 );
 
 class GameNotifier extends StateNotifier<GameState> {
-  GameNotifier() : super(const GameState());
+  final Ref ref;
+  GameNotifier(this.ref) : super(const GameState());
+
+  Future<void> loadGameData() async {
+    final apiService = ref.read(apiServiceProvider);
+    final response = await apiService.getUserGameData();
+
+    state = GameState(
+      earnedPoints: response.data.earnedPoints,
+      currentLevel: response.data.currentLevel,
+      currentLevelWordsFound: response.data.currentLevelWordsFound,
+      currentHearts: response.data.currentHearts,
+      lastHeartUpdate: response.data.lastHeartUpdate,
+      lastActivityDate: response.data.lastActivityDate,
+      dailyAdsWatched: response.data.dailyAdsWatched,
+      levelsCompletedToday: response.data.levelsCompletedToday,
+    );
+  }
 
   void setGame(GameState newState) {
     state = newState;

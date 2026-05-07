@@ -12,20 +12,20 @@ import '../models/store/store_response.dart';
 import '../models/user/registration_response.dart';
 
 class ApiService {
-  //final Ref ref;
+  final Ref ref;
 
-  //ApiService(this.ref);
+  ApiService(this.ref);
 
   final String baseUrl = "https://9c88-136-158-61-7.ngrok-free.app";
   final String key = "7bEeSUU1GjGEGXENyvOVl+pD46zdipW/nCXLNnokC10=";
 
   Map<String, String> get _headers {
-    //final token = ref.read(authProvider).accessToken;
+    final token = ref.read(authProvider).accessToken;
     return {
       "Content-Type": "application/json",
       "Accept": "application/json",
       "x-api-key": key,
-      //"authorization": "Bearer $token",
+      "authorization": "Bearer $token",
     };
   }
 
@@ -247,10 +247,54 @@ class ApiService {
   Future<GameDataResponse> getUserGameData() async {
     final uri = Uri.parse("$baseUrl/api/game/me");
 
-    final response = await http.get(uri, headers: _headers);
+    var response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode == 401) {
+      final newToken = await refreshToken();
+
+      if (newToken == null) {
+        throw Exception("Session expired");
+      }
+
+      response = await http.get(
+        uri,
+        headers: {..._headers, "authorization": "Bearer $newToken"},
+      );
+    }
 
     final jsonData = jsonDecode(response.body);
 
     return GameDataResponse.fromJson(jsonData);
+  }
+
+  Future<String?> refreshToken() async {
+    final refreshToken = ref.read(authProvider).refreshToken;
+
+    final uri = Uri.parse("$baseUrl/api/auth/refresh");
+
+    final response = await http.post(
+      uri,
+      headers: _headers,
+      body: jsonEncode({"refresh_token": refreshToken}),
+    );
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      final newAccessToken = data["access_token"];
+
+      final auth = ref.read(authProvider);
+
+      ref
+          .read(authProvider.notifier)
+          .setAuth(
+            userId: auth.userId!,
+            accessToken: newAccessToken,
+            refreshToken: refreshToken!,
+          );
+
+      return newAccessToken;
+    }
+
+    return null;
   }
 }

@@ -5,22 +5,23 @@ import 'package:city_cipher/screens/login_screen.dart';
 import 'package:city_cipher/screens/verification_screen.dart';
 import 'package:city_cipher/shared/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../core/enums/app_enums.dart';
+import '../core/providers/api_service_provider.dart';
 import '../core/theme.dart';
 import '../core/validators/name_validators.dart';
-import '../services/api_service.dart';
 import '../shared/utils/toast.dart';
 import 'game_tab.dart';
 
-class RegistrationScreen extends StatefulWidget {
+class RegistrationScreen extends ConsumerStatefulWidget {
   const RegistrationScreen({super.key});
 
   @override
-  State<RegistrationScreen> createState() => _RegistrationScreenState();
+  ConsumerState<RegistrationScreen> createState() => _RegistrationScreenState();
 }
 
-class _RegistrationScreenState extends State<RegistrationScreen> {
+class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -32,7 +33,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   PasswordInput _password = const PasswordInput.pure();
   String _confirmPassword = '';
 
-  final ApiService apiService = ApiService();
   AppState registrationState = AppState.initialize;
 
   Future<void> register() async {
@@ -41,6 +41,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     });
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.userRegistration(
         _firstName.value,
         _lastName.value,

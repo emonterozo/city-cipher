@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:city_cipher/core/theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../core/enums/app_enums.dart';
+import '../core/providers/api_service_provider.dart';
 import '../models/reward/reward_model.dart';
-import '../services/api_service.dart';
 import '../shared/widgets/custom_app_bar.dart';
 import '../shared/widgets/error_state_view.dart';
 
-class RewardDetailsScreen extends StatefulWidget {
+class RewardDetailsScreen extends ConsumerStatefulWidget {
   final String rewardId;
   const RewardDetailsScreen({super.key, required this.rewardId});
 
   @override
-  State<RewardDetailsScreen> createState() => _RewardDetailsScreenState();
+  ConsumerState<RewardDetailsScreen> createState() =>
+      _RewardDetailsScreenState();
 }
 
-class _RewardDetailsScreenState extends State<RewardDetailsScreen> {
-  final ApiService apiService = ApiService();
+class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
   Reward? reward;
   AppState rewardState = AppState.loading;
 
@@ -26,6 +27,7 @@ class _RewardDetailsScreenState extends State<RewardDetailsScreen> {
     setState(() => rewardState = AppState.loading);
 
     try {
+      final apiService = ref.read(apiServiceProvider);
       final response = await apiService.getRewardDetails(widget.rewardId);
 
       if (response.success) {

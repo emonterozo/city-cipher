@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:city_cipher/core/providers/game_provider.dart';
 import 'package:city_cipher/models/auth/auth_model.dart';
 import 'package:city_cipher/screens/login_screen.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'core/enums/app_enums.dart';
+import 'core/providers/api_service_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/game_config_provider.dart';
 import 'models/gameConfig/game_config_model.dart';
@@ -39,7 +41,7 @@ class MainNavigation extends ConsumerStatefulWidget {
 class _MainNavigationState extends ConsumerState<MainNavigation> {
   int _currentTabIndex = 0;
   late final List<Widget> _pages = [const HomeTab(), const RewardsTab()];
-  final ApiService apiService = ApiService();
+
   AppState appState = AppState.loading;
 
   void loadGameConfig() {
@@ -47,9 +49,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   }
 
   void loadUserGameState() {
-    final auth = ref.read(authProvider);
-    //fetch game provider
-    print("test ${auth.accessToken}");
+    ref.read(gameProvider.notifier).loadGameData();
   }
 
   @override
