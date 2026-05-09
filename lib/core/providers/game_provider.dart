@@ -1,108 +1,134 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
+import '../../models/user/game_data_model.dart';
 import 'api_service_provider.dart';
 
-class GameState {
-  final int earnedPoints;
-  final int currentLevel;
-  final List<String> currentLevelWordsFound;
-  final int currentHearts;
-  final DateTime? lastHeartUpdate;
-  final String lastActivityDate;
-  final int dailyAdsWatched;
-  final int levelsCompletedToday;
-
-  const GameState({
-    this.earnedPoints = 0,
-    this.currentLevel = 1,
-    this.currentLevelWordsFound = const [],
-    this.currentHearts = 5,
-    this.lastHeartUpdate,
-    this.lastActivityDate = "",
-    this.dailyAdsWatched = 0,
-    this.levelsCompletedToday = 0,
-  });
-
-  GameState copyWith({
-    int? earnedPoints,
-    int? currentLevel,
-    List<String>? currentLevelWordsFound,
-    int? currentHearts,
-    DateTime? lastHeartUpdate,
-    String? lastActivityDate,
-    int? dailyAdsWatched,
-    int? levelsCompletedToday,
-  }) {
-    return GameState(
-      earnedPoints: earnedPoints ?? this.earnedPoints,
-      currentLevel: currentLevel ?? this.currentLevel,
-      currentLevelWordsFound:
-          currentLevelWordsFound ?? this.currentLevelWordsFound,
-      currentHearts: currentHearts ?? this.currentHearts,
-      lastHeartUpdate: lastHeartUpdate ?? this.lastHeartUpdate,
-      lastActivityDate: lastActivityDate ?? this.lastActivityDate,
-      dailyAdsWatched: dailyAdsWatched ?? this.dailyAdsWatched,
-      levelsCompletedToday: levelsCompletedToday ?? this.levelsCompletedToday,
-    );
-  }
-}
-
-final gameProvider = StateNotifierProvider<GameNotifier, GameState>(
+final gameProvider = StateNotifierProvider<GameNotifier, GameData?>(
   (ref) => GameNotifier(ref),
 );
 
-class GameNotifier extends StateNotifier<GameState> {
+class GameNotifier extends StateNotifier<GameData?> {
   final Ref ref;
-  GameNotifier(this.ref) : super(const GameState());
+
+  GameNotifier(this.ref) : super(null);
 
   Future<void> loadGameData() async {
     final apiService = ref.read(apiServiceProvider);
+
     final response = await apiService.getUserGameData();
 
-    state = GameState(
-      earnedPoints: response.data.earnedPoints,
-      currentLevel: response.data.currentLevel,
-      currentLevelWordsFound: response.data.currentLevelWordsFound,
-      currentHearts: response.data.currentHearts,
-      lastHeartUpdate: response.data.lastHeartUpdate,
-      lastActivityDate: response.data.lastActivityDate,
-      dailyAdsWatched: response.data.dailyAdsWatched,
-      levelsCompletedToday: response.data.levelsCompletedToday,
-    );
+    state = response.data;
   }
 
-  void setGame(GameState newState) {
+  void setGame(GameData newState) {
     state = newState;
   }
 
-  void addPoints(int points) {
-    state = state.copyWith(earnedPoints: state.earnedPoints + points);
+  Future<void> updateInterstitialAd(int level) async {
+    if (state == null) return;
+
+    final newState = state!.copyWith(interstitialAdsShownLevel: level);
+
+    state = newState;
+
+    await ref.read(apiServiceProvider).updateUserGameData({
+      "interstitial_ads_shown_level": newState.interstitialAdsShownLevel,
+    });
   }
 
-  void deductPoints(int points) {
-    state = state.copyWith(earnedPoints: state.earnedPoints - points);
-  }
+  Future<void> completedLevel(int points) async {
+    if (state == null) return;
 
-  void increaseLevel() {
-    state = state.copyWith(currentLevel: state.currentLevel + 1);
-  }
-
-  void addFoundWord(String word) {
-    state = state.copyWith(
-      currentLevelWordsFound: [...state.currentLevelWordsFound, word],
+    final newState = state!.copyWith(
+      earnedPoints: state!.earnedPoints + points,
+      currentLevel: state!.currentLevel + 1,
+      currentLevelWordsFound: [],
+      hintedOffsets: [],
+      levelHintsUsed: 0,
     );
+
+    state = newState;
+
+    await ref.read(apiServiceProvider).updateUserGameData({
+      "earned_points": newState.earnedPoints,
+      "current_level": newState.currentLevel,
+      "current_level_words_found": [],
+      "hinted_cells": [],
+      "level_hints_used": 0,
+    });
   }
 
-  void updateHearts(int hearts) {
-    state = state.copyWith(currentHearts: hearts);
+  Future<void> storeLevelPrefilled(List<Offset> offset) async {
+    if (state == null) return;
+
+    final newState = state!.copyWith(hintedOffsets: offset);
+
+    state = newState;
+
+    ref.read(apiServiceProvider).updateUserGameData({
+      "hinted_cells": offset
+          .map((e) => {"x": e.dx.toInt(), "y": e.dy.toInt()})
+          .toList(),
+    });
   }
 
-  void resetLevelProgress() {
-    state = state.copyWith(currentLevelWordsFound: []);
+  Future<void> useHint(int points, Offset offset) async {
+    if (state == null) return;
+
+    final updatedHints = [
+      ...state!.hintedOffsets,
+      Offset(offset.dx.toInt().toDouble(), offset.dy.toInt().toDouble()),
+    ];
+
+    final newState = state!.copyWith(
+      earnedPoints: state!.earnedPoints - points,
+      hintedOffsets: updatedHints,
+      levelHintsUsed: state!.levelHintsUsed + 1,
+    );
+
+    state = newState;
+
+    ref.read(apiServiceProvider).updateUserGameData({
+      "earned_points": newState.earnedPoints,
+      "hinted_cells": updatedHints
+          .map((e) => {"x": e.dx.toInt(), "y": e.dy.toInt()})
+          .toList(),
+      "level_hints_used": newState.levelHintsUsed,
+      "is_free_hint": points == 0,
+    });
+  }
+
+  Future<void> addFoundWord(String word) async {
+    if (state == null) return;
+
+    if (state!.currentLevelWordsFound.contains(word)) return;
+
+    final updatedWords = [...state!.currentLevelWordsFound, word];
+
+    final newState = state!.copyWith(currentLevelWordsFound: updatedWords);
+
+    state = newState;
+
+    await ref.read(apiServiceProvider).updateUserGameData({
+      "current_level_words_found": updatedWords,
+    });
+  }
+
+  Future<void> updateHearts(int hearts) async {
+    if (state == null) return;
+
+    final newState = state!.copyWith(currentHearts: hearts);
+
+    state = newState;
+
+    await ref.read(apiServiceProvider).updateUserGameData({
+      "current_hearts": hearts,
+    });
   }
 
   void clear() {
-    state = const GameState();
+    state = null;
   }
 }

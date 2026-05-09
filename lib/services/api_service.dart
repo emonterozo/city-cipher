@@ -12,16 +12,31 @@ import '../models/reward/reward_response.dart';
 import '../models/store/store_response.dart';
 import '../models/user/registration_response.dart';
 
+class ApiResponse {
+  final bool success;
+  final String message;
+
+  ApiResponse({required this.success, required this.message});
+
+  factory ApiResponse.fromJson(Map<String, dynamic> json) {
+    return ApiResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+    );
+  }
+}
+
 class ApiService {
   final Ref ref;
 
   ApiService(this.ref);
 
-  final String baseUrl = "https://9c88-136-158-61-7.ngrok-free.app";
+  final String baseUrl = "https://72bc-136-158-61-7.ngrok-free.app";
   final String key = "7bEeSUU1GjGEGXENyvOVl+pD46zdipW/nCXLNnokC10=";
 
   Map<String, String> get _headers {
     final token = ref.read(authProvider).accessToken;
+    print(token);
     return {
       "Content-Type": "application/json",
       "Accept": "application/json",
@@ -252,6 +267,7 @@ class ApiService {
 
     if (response.statusCode == 401) {
       final newToken = await refreshToken();
+      print(newToken);
 
       if (newToken == null) {
         throw Exception("Session expired");
@@ -317,5 +333,32 @@ class ApiService {
     final jsonData = jsonDecode(response.body);
 
     return GameLevelResponse.fromJson(jsonData);
+  }
+
+  Future<ApiResponse> updateUserGameData(Map<String, dynamic> body) async {
+    final uri = Uri.parse("$baseUrl/api/game/me");
+
+    var response = await http.patch(
+      uri,
+      headers: _headers,
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 401) {
+      final newToken = await refreshToken();
+
+      if (newToken == null) {
+        throw Exception("Session expired");
+      }
+
+      response = await http.get(
+        uri,
+        headers: {..._headers, "authorization": "Bearer $newToken"},
+      );
+    }
+
+    final jsonData = jsonDecode(response.body);
+
+    return ApiResponse.fromJson(jsonData);
   }
 }

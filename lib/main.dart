@@ -1,24 +1,23 @@
-import 'dart:convert';
-
+import 'dart:async';
 import 'package:city_cipher/core/providers/game_provider.dart';
-import 'package:city_cipher/models/auth/auth_model.dart';
 import 'package:city_cipher/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'core/enums/app_enums.dart';
-import 'core/providers/api_service_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/game_config_provider.dart';
-import 'models/gameConfig/game_config_model.dart';
 import 'screens/game_tab.dart';
 import 'screens/home_tab.dart';
 import 'screens/rewards_tab.dart';
 import 'core/theme.dart';
-import 'services/api_service.dart';
 
-void main() => runApp(const ProviderScope(child: CityCipherApp()));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  unawaited(MobileAds.instance.initialize());
+  runApp(const ProviderScope(child: CityCipherApp()));
+}
 
 class CityCipherApp extends StatelessWidget {
   const CityCipherApp({super.key});

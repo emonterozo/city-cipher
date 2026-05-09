@@ -7,12 +7,13 @@ class RankConfig {
   final int maxLevel;
   final int rewardPerLevel;
   final int dailyLevelCap;
-  final int extraLevelsPerAd;
   final int maxHearts;
   final int heartRegenMins;
   final int hintCost;
   final int adFrequency;
-  final int skipTimerSeconds;
+  final int hintPerLevelLimit;
+  final int dailyAdBonusLimit;
+  final int extraLevelsPerAd;
 
   RankConfig({
     required this.id,
@@ -21,12 +22,13 @@ class RankConfig {
     required this.maxLevel,
     required this.rewardPerLevel,
     required this.dailyLevelCap,
-    required this.extraLevelsPerAd,
     required this.maxHearts,
     required this.heartRegenMins,
     required this.hintCost,
     required this.adFrequency,
-    required this.skipTimerSeconds,
+    required this.hintPerLevelLimit,
+    required this.dailyAdBonusLimit,
+    required this.extraLevelsPerAd,
   });
 
   factory RankConfig.fromJson(Map<String, dynamic> json) {
@@ -37,12 +39,13 @@ class RankConfig {
       maxLevel: json['max_level'] ?? 0,
       rewardPerLevel: json['reward_per_level'] ?? 0,
       dailyLevelCap: json['daily_level_cap'] ?? 0,
-      extraLevelsPerAd: json['extra_levels_per_ad'] ?? 0,
       maxHearts: json['max_hearts'] ?? 0,
       heartRegenMins: json['heart_regen_mins'] ?? 0,
       hintCost: json['hint_cost'] ?? 0,
       adFrequency: json['ad_frequency'] ?? 0,
-      skipTimerSeconds: json['skip_timer_seconds'] ?? 0,
+      hintPerLevelLimit: json['hint_per_level_limit'] ?? 0,
+      dailyAdBonusLimit: json['daily_ad_bonus_limit'] ?? 0,
+      extraLevelsPerAd: json['extra_levels_per_ad'] ?? 0,
     );
   }
 
@@ -54,12 +57,13 @@ class RankConfig {
       'max_level': maxLevel,
       'reward_per_level': rewardPerLevel,
       'daily_level_cap': dailyLevelCap,
-      'extra_levels_per_ad': extraLevelsPerAd,
       'max_hearts': maxHearts,
       'heart_regen_mins': heartRegenMins,
       'hint_cost': hintCost,
       'ad_frequency': adFrequency,
-      'skip_timer_seconds': skipTimerSeconds,
+      'hint_per_level_limit': hintPerLevelLimit,
+      'daily_ad_bonus_limit': dailyAdBonusLimit,
+      'extra_levels_per_ad': extraLevelsPerAd,
     };
   }
 }
@@ -131,7 +135,9 @@ class GameConfig {
 
   RankConfig? getRankByLevel(int level) {
     for (final r in ranks) {
-      if (level >= r.minLevel && level <= r.maxLevel) {
+      final max = r.maxLevel == -1 ? double.infinity : r.maxLevel;
+
+      if (level >= r.minLevel && level <= max) {
         return r;
       }
     }

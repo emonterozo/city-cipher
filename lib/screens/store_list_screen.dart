@@ -148,7 +148,7 @@ class _StoreListScreenState extends ConsumerState<StoreListScreen> {
                     ),
                     cursorColor: CityCipherTheme.primary,
                     decoration: InputDecoration(
-                      hintText: "Search stores...",
+                      hintText: "Search stores, categories, or addresses...",
                       hintStyle: TextStyle(
                         color: CityCipherTheme.mutedForeground,
                         fontSize: 16,

@@ -1,5 +1,6 @@
 import 'package:city_cipher/core/providers/game_provider.dart';
 import 'package:city_cipher/models/gameConfig/game_config_model.dart';
+import 'package:city_cipher/models/user/game_data_model.dart';
 import 'package:city_cipher/screens/store_list_screen.dart';
 import 'package:city_cipher/shared/widgets/store_card.dart';
 import 'package:city_cipher/shared/widgets/store_card_loading_grid.dart';
@@ -304,13 +305,13 @@ class _HomeTabState extends ConsumerState<HomeTab> {
     );
   }
 
-  Widget _profileCard(GameState userGameData, GameConfig? gameConfig) {
-    final int currentUserLevel = userGameData.currentLevel;
+  Widget _profileCard(GameData? userGameData, GameConfig? gameConfig) {
+    final int currentUserLevel = userGameData?.currentLevel ?? 1;
     final rankConfig = gameConfig?.getRankByLevel(currentUserLevel);
 
     final int maxGameLevel = gameConfig?.globalSettings.totalLevels ?? 0;
     final String pointsLabel = NumberFormat.decimalPattern().format(
-      userGameData.earnedPoints,
+      userGameData?.earnedPoints ?? 0,
     );
     const int step = 50;
     const int totalSegments = 5;

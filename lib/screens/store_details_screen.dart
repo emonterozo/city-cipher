@@ -810,6 +810,7 @@ class _BranchCardState extends State<BranchCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+               const SizedBox(width: 5,),
                 Row(
                   children: branch.socials.map((s) {
                     const socialIcons = {
