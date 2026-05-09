@@ -280,16 +280,7 @@ class _GameTabState extends ConsumerState<GameTab> {
           rankConfig.adFrequency) {
         _showInterstitialAd(userGameData.currentLevel);
       }
-      if (userGameData.dailyLevelsPlayed < rankConfig.dailyLevelCap) {
-        _proceedToNextLevel(userGameData, rankConfig);
-        return;
-      }
-
-      if (userGameData.adBonusUsedCount < rankConfig.dailyAdBonusLimit) {
-        //_showAdToUnlockDialog
-      } else {
-        //_showDailyLimitScreen
-      }
+      _proceedToNextLevel(userGameData, rankConfig);
     }
   }
 

@@ -9,9 +9,7 @@ class GameData {
   final int currentHearts;
   final DateTime lastHeartUpdate;
   final int levelHintsUsed;
-  final int dailyLevelsPlayed;
   final int adBonusUsedCount;
-  final DateTime lastDailyReset;
   final int interstitialAdsShownLevel;
 
   GameData({
@@ -23,9 +21,7 @@ class GameData {
     required this.currentHearts,
     required this.lastHeartUpdate,
     required this.levelHintsUsed,
-    required this.dailyLevelsPlayed,
     required this.adBonusUsedCount,
-    required this.lastDailyReset,
     required this.interstitialAdsShownLevel,
   });
 
@@ -34,27 +30,20 @@ class GameData {
       id: json['_id'] ?? '',
       earnedPoints: json['earned_points'] ?? 0,
       currentLevel: json['current_level'] ?? 0,
-
       currentLevelWordsFound:
           (json['current_level_words_found'] as List<dynamic>? ?? [])
               .map((e) => e.toString())
               .toList(),
-
       hintedOffsets: (json['hinted_cells'] as List<dynamic>? ?? [])
           .map(
             (e) => Offset((e['x'] ?? 0).toDouble(), (e['y'] ?? 0).toDouble()),
           )
           .toList(),
-
       currentHearts: json['current_hearts'] ?? 0,
       lastHeartUpdate:
           DateTime.tryParse(json['last_heart_update'] ?? '') ?? DateTime.now(),
-
       levelHintsUsed: json['level_hints_used'] ?? 0,
-      dailyLevelsPlayed: json['daily_levels_played'] ?? 0,
       adBonusUsedCount: json['ad_bonus_used_count'] ?? 0,
-      lastDailyReset:
-          DateTime.tryParse(json['last_daily_reset'] ?? '') ?? DateTime.now(),
       interstitialAdsShownLevel: json['interstitial_ads_shown_level'] ?? 0,
     );
   }
@@ -65,15 +54,11 @@ class GameData {
       'earned_points': earnedPoints,
       'current_level': currentLevel,
       'current_level_words_found': currentLevelWordsFound,
-
       'hinted_cells': hintedOffsets.map((e) => {'x': e.dx, 'y': e.dy}).toList(),
-
       'current_hearts': currentHearts,
       'last_heart_update': lastHeartUpdate.toIso8601String(),
       'level_hints_used': levelHintsUsed,
-      'daily_levels_played': dailyLevelsPlayed,
       'ad_bonus_used_count': adBonusUsedCount,
-      'last_daily_reset': lastDailyReset.toIso8601String(),
       'interstitial_ads_shown_level': interstitialAdsShownLevel,
     };
   }
@@ -102,9 +87,7 @@ class GameData {
       currentHearts: currentHearts ?? this.currentHearts,
       lastHeartUpdate: lastHeartUpdate ?? this.lastHeartUpdate,
       levelHintsUsed: levelHintsUsed ?? this.levelHintsUsed,
-      dailyLevelsPlayed: dailyLevelsPlayed ?? this.dailyLevelsPlayed,
       adBonusUsedCount: adBonusUsedCount ?? this.adBonusUsedCount,
-      lastDailyReset: lastDailyReset ?? this.lastDailyReset,
       interstitialAdsShownLevel:
           interstitialAdsShownLevel ?? this.interstitialAdsShownLevel,
     );

@@ -6,14 +6,11 @@ class RankConfig {
   final int minLevel;
   final int maxLevel;
   final int rewardPerLevel;
-  final int dailyLevelCap;
   final int maxHearts;
   final int heartRegenMins;
   final int hintCost;
   final int adFrequency;
   final int hintPerLevelLimit;
-  final int dailyAdBonusLimit;
-  final int extraLevelsPerAd;
 
   RankConfig({
     required this.id,
@@ -21,14 +18,11 @@ class RankConfig {
     required this.minLevel,
     required this.maxLevel,
     required this.rewardPerLevel,
-    required this.dailyLevelCap,
     required this.maxHearts,
     required this.heartRegenMins,
     required this.hintCost,
     required this.adFrequency,
     required this.hintPerLevelLimit,
-    required this.dailyAdBonusLimit,
-    required this.extraLevelsPerAd,
   });
 
   factory RankConfig.fromJson(Map<String, dynamic> json) {
@@ -38,14 +32,11 @@ class RankConfig {
       minLevel: json['min_level'] ?? 0,
       maxLevel: json['max_level'] ?? 0,
       rewardPerLevel: json['reward_per_level'] ?? 0,
-      dailyLevelCap: json['daily_level_cap'] ?? 0,
       maxHearts: json['max_hearts'] ?? 0,
       heartRegenMins: json['heart_regen_mins'] ?? 0,
       hintCost: json['hint_cost'] ?? 0,
       adFrequency: json['ad_frequency'] ?? 0,
       hintPerLevelLimit: json['hint_per_level_limit'] ?? 0,
-      dailyAdBonusLimit: json['daily_ad_bonus_limit'] ?? 0,
-      extraLevelsPerAd: json['extra_levels_per_ad'] ?? 0,
     );
   }
 
@@ -56,14 +47,11 @@ class RankConfig {
       'min_level': minLevel,
       'max_level': maxLevel,
       'reward_per_level': rewardPerLevel,
-      'daily_level_cap': dailyLevelCap,
       'max_hearts': maxHearts,
       'heart_regen_mins': heartRegenMins,
       'hint_cost': hintCost,
       'ad_frequency': adFrequency,
       'hint_per_level_limit': hintPerLevelLimit,
-      'daily_ad_bonus_limit': dailyAdBonusLimit,
-      'extra_levels_per_ad': extraLevelsPerAd,
     };
   }
 }
