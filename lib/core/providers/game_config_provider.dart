@@ -17,7 +17,11 @@ class GameConfigNotifier extends StateNotifier<GameConfig?> {
     final apiService = ref.read(apiServiceProvider);
     final response = await apiService.getGameConfigs();
 
-    state = response.data[0];
+    if (response.success) {
+      state = response.data[0];
+    } else {
+      state = null;
+    }
   }
 
   void setConfig(GameConfig config) {

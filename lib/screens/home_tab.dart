@@ -1,3 +1,4 @@
+import 'package:city_cipher/core/providers/auth_provider.dart';
 import 'package:city_cipher/core/providers/game_provider.dart';
 import 'package:city_cipher/models/gameConfig/game_config_model.dart';
 import 'package:city_cipher/models/user/game_data_model.dart';
@@ -5,6 +6,7 @@ import 'package:city_cipher/screens/store_list_screen.dart';
 import 'package:city_cipher/shared/widgets/store_card.dart';
 import 'package:city_cipher/shared/widgets/store_card_loading_grid.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
@@ -649,12 +651,12 @@ class _HomeTabState extends ConsumerState<HomeTab> {
   }
 }
 
-class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
+class _AppHeader extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(60);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppBar(
       automaticallyImplyLeading: false,
       titleSpacing: 0,
@@ -665,7 +667,12 @@ class _AppHeader extends StatelessWidget implements PreferredSizeWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             GestureDetector(
-              onTap: () {},
+              onTap: () async {
+                final storage = FlutterSecureStorage();
+                await storage.deleteAll();
+                ref.read(gameProvider.notifier).clear();
+                ref.read(authProvider.notifier).logout();
+              },
               child: Container(
                 height: 45,
                 width: 45,

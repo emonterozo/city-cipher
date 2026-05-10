@@ -1,3 +1,4 @@
+import 'package:city_cipher/core/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:city_cipher/core/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -161,6 +162,7 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
   }
 
   Widget _buildRewardContent() {
+    final isAuthenticated = ref.watch(authProvider).isAuthenticated;
     final formattedEndDate = DateFormat(
       'MMMM dd, yyyy',
     ).format(reward!.endDate);
@@ -237,7 +239,12 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
             ),
           ),
         ),
-        Align(alignment: Alignment.bottomCenter, child: _buildClaimButton()),
+        isAuthenticated
+            ? Align(
+                alignment: Alignment.bottomCenter,
+                child: _buildClaimButton(),
+              )
+            : const SizedBox.shrink(),
       ],
     );
   }

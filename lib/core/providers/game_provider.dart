@@ -1,3 +1,5 @@
+import 'package:city_cipher/models/user/game_data_response.dart';
+import 'package:city_cipher/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -14,32 +16,79 @@ class GameNotifier extends StateNotifier<GameData?> {
 
   GameNotifier(this.ref) : super(null);
 
-  Future<void> loadGameData() async {
+  Future<GameDataResponse> loadGameData() async {
     final apiService = ref.read(apiServiceProvider);
 
     final response = await apiService.getUserGameData();
 
-    state = response.data;
+    if (response.statusCode == 401) {
+      return GameDataResponse.sessionExpired();
+    }
+
+    if (response.success) {
+      state = response.data;
+      return response;
+    } else {
+      state = null;
+      return GameDataResponse(success: false, message: "Something went wrong");
+    }
   }
 
   void setGame(GameData newState) {
     state = newState;
   }
 
-  Future<void> updateInterstitialAd(int level) async {
-    if (state == null) return;
+  Future<ApiResponse> _retryUpdate(Map<String, dynamic> data) async {
+    const maxRetries = 5;
+
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final response = await ref
+            .read(apiServiceProvider)
+            .updateUserGameData(data);
+
+        if (response.statusCode == 401) {
+          return response;
+        }
+
+        if (response.success) {
+          return response;
+        }
+
+        if (attempt == maxRetries - 1) {
+          return response;
+        }
+      } catch (e) {
+        if (attempt == maxRetries - 1) {
+          return ApiResponse(success: false, message: e.toString());
+        }
+      }
+
+      await Future.delayed(Duration(seconds: 1 * (attempt + 1)));
+    }
+
+    return ApiResponse(success: false, message: "Failed after retries");
+  }
+
+  Future<ApiResponse> updateInterstitialAd(int level) async {
+    if (state == null) {
+      return ApiResponse(success: false, message: "No state");
+    }
 
     final newState = state!.copyWith(interstitialAdsShownLevel: level);
 
     state = newState;
 
-    await ref.read(apiServiceProvider).updateUserGameData({
+    final response = await _retryUpdate({
       "interstitial_ads_shown_level": newState.interstitialAdsShownLevel,
     });
+    return response;
   }
 
-  Future<void> completedLevel(int points) async {
-    if (state == null) return;
+  Future<ApiResponse> completedLevel(int points, int hearts) async {
+    if (state == null) {
+      return ApiResponse(success: false, message: "No state");
+    }
 
     final newState = state!.copyWith(
       earnedPoints: state!.earnedPoints + points,
@@ -47,35 +96,43 @@ class GameNotifier extends StateNotifier<GameData?> {
       currentLevelWordsFound: [],
       hintedOffsets: [],
       levelHintsUsed: 0,
+      currentHearts: hearts,
     );
 
     state = newState;
 
-    await ref.read(apiServiceProvider).updateUserGameData({
+    final response = await _retryUpdate({
       "earned_points": newState.earnedPoints,
       "current_level": newState.currentLevel,
       "current_level_words_found": [],
       "hinted_cells": [],
       "level_hints_used": 0,
+      "current_hearts": hearts,
     });
+    return response;
   }
 
-  Future<void> storeLevelPrefilled(List<Offset> offset) async {
-    if (state == null) return;
+  Future<ApiResponse> storeLevelPrefilled(List<Offset> offset) async {
+    if (state == null) {
+      return ApiResponse(success: false, message: "No state");
+    }
 
     final newState = state!.copyWith(hintedOffsets: offset);
 
     state = newState;
 
-    ref.read(apiServiceProvider).updateUserGameData({
+    final response = await _retryUpdate({
       "hinted_cells": offset
           .map((e) => {"x": e.dx.toInt(), "y": e.dy.toInt()})
           .toList(),
     });
+    return response;
   }
 
-  Future<void> useHint(int points, Offset offset) async {
-    if (state == null) return;
+  Future<ApiResponse> useHint(int points, Offset offset) async {
+    if (state == null) {
+      return ApiResponse(success: false, message: "No state");
+    }
 
     final updatedHints = [
       ...state!.hintedOffsets,
@@ -90,7 +147,7 @@ class GameNotifier extends StateNotifier<GameData?> {
 
     state = newState;
 
-    ref.read(apiServiceProvider).updateUserGameData({
+    final response = await _retryUpdate({
       "earned_points": newState.earnedPoints,
       "hinted_cells": updatedHints
           .map((e) => {"x": e.dx.toInt(), "y": e.dy.toInt()})
@@ -98,12 +155,18 @@ class GameNotifier extends StateNotifier<GameData?> {
       "level_hints_used": newState.levelHintsUsed,
       "is_free_hint": points == 0,
     });
+
+    return response;
   }
 
-  Future<void> addFoundWord(String word) async {
-    if (state == null) return;
+  Future<ApiResponse> addFoundWord(String word) async {
+    if (state == null) {
+      return ApiResponse(success: false, message: "No state");
+    }
 
-    if (state!.currentLevelWordsFound.contains(word)) return;
+    if (state!.currentLevelWordsFound.contains(word)) {
+      return ApiResponse(success: true, message: "Already found");
+    }
 
     final updatedWords = [...state!.currentLevelWordsFound, word];
 
@@ -111,21 +174,10 @@ class GameNotifier extends StateNotifier<GameData?> {
 
     state = newState;
 
-    await ref.read(apiServiceProvider).updateUserGameData({
+    final response = await _retryUpdate({
       "current_level_words_found": updatedWords,
     });
-  }
-
-  Future<void> updateHearts(int hearts) async {
-    if (state == null) return;
-
-    final newState = state!.copyWith(currentHearts: hearts);
-
-    state = newState;
-
-    await ref.read(apiServiceProvider).updateUserGameData({
-      "current_hearts": hearts,
-    });
+    return response;
   }
 
   void clear() {

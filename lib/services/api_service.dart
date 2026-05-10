@@ -13,15 +13,25 @@ import '../models/store/store_response.dart';
 import '../models/user/registration_response.dart';
 
 class ApiResponse {
+  final int? statusCode;
   final bool success;
   final String message;
 
-  ApiResponse({required this.success, required this.message});
+  ApiResponse({this.statusCode, required this.success, required this.message});
 
-  factory ApiResponse.fromJson(Map<String, dynamic> json) {
+  factory ApiResponse.fromJson(Map<String, dynamic> json, {int? statusCode}) {
     return ApiResponse(
+      statusCode: statusCode,
       success: json['success'] ?? false,
       message: json['message'] ?? '',
+    );
+  }
+
+  factory ApiResponse.sessionExpired() {
+    return ApiResponse(
+      statusCode: 401,
+      success: false,
+      message: "Session expired",
     );
   }
 }
@@ -36,7 +46,6 @@ class ApiService {
 
   Map<String, String> get _headers {
     final token = ref.read(authProvider).accessToken;
-    print(token);
     return {
       "Content-Type": "application/json",
       "Accept": "application/json",
@@ -267,10 +276,9 @@ class ApiService {
 
     if (response.statusCode == 401) {
       final newToken = await refreshToken();
-      print(newToken);
 
       if (newToken == null) {
-        throw Exception("Session expired");
+        return GameDataResponse.sessionExpired();
       }
 
       response = await http.get(
@@ -281,7 +289,7 @@ class ApiService {
 
     final jsonData = jsonDecode(response.body);
 
-    return GameDataResponse.fromJson(jsonData);
+    return GameDataResponse.fromJson(jsonData, statusCode: response.statusCode);
   }
 
   Future<String?> refreshToken() async {
@@ -348,7 +356,7 @@ class ApiService {
       final newToken = await refreshToken();
 
       if (newToken == null) {
-        throw Exception("Session expired");
+        return ApiResponse.sessionExpired();
       }
 
       response = await http.get(

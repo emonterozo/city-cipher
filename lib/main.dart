@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:city_cipher/core/providers/game_provider.dart';
 import 'package:city_cipher/screens/login_screen.dart';
+import 'package:city_cipher/shared/utils/app_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;
@@ -47,8 +48,12 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     ref.read(gameConfigProvider.notifier).loadConfig();
   }
 
-  void loadUserGameState() {
-    ref.read(gameProvider.notifier).loadGameData();
+  void loadUserGameState() async {
+    final response = await ref.read(gameProvider.notifier).loadGameData();
+    if (response.statusCode == 401) {
+      if (!mounted) return;
+      AppDialogs.sessionExpired(context);
+    }
   }
 
   @override
@@ -86,9 +91,6 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
         ),
         child: FloatingActionButton(
           onPressed: () async {
-            // final storage = FlutterSecureStorage();
-            // await storage.deleteAll();
-
             final auth = ref.read(authProvider);
             if (auth.isAuthenticated) {
               Navigator.pushReplacement(

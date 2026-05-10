@@ -88,7 +88,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 accessToken: response.accessToken ?? '',
                 refreshToken: response.refreshToken ?? '',
               );
-          ref.read(gameProvider.notifier).loadGameData();
           if (!mounted) return;
           Navigator.pushReplacement(
             context,

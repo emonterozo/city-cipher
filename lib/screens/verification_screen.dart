@@ -106,7 +106,6 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 accessToken: response.accessToken,
                 refreshToken: response.refreshToken,
               );
-          ref.read(gameProvider.notifier).loadGameData();
         }
 
         widget.onSuccess?.call();

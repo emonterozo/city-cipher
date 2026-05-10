@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:city_cipher/core/providers/game_provider.dart';
 import 'package:city_cipher/main.dart';
 import 'package:city_cipher/models/gameConfig/game_config_model.dart';
+import 'package:city_cipher/shared/utils/app_dialog.dart';
 import 'package:city_cipher/shared/utils/toast.dart';
+import 'package:city_cipher/shared/widgets/error_state_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,7 +44,8 @@ class _GameTabState extends ConsumerState<GameTab> {
       ? 'ca-app-pub-3940256099942544/1033173712'
       : 'ca-app-pub-3940256099942544/4411468910';
 
-  app.AppState gameState = app.AppState.initialize;
+  app.AppState gameState = app.AppState.loading;
+  app.AppState userState = app.AppState.initialize;
   List<GameLevel> allLevels = [];
   List<int> _selectedIndices = [];
   Offset? _currentDragPoint;
@@ -175,9 +178,7 @@ class _GameTabState extends ConsumerState<GameTab> {
     _loadBannerAd();
     _loadRewardedAd();
     _loadInterstitialAd();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      fetchLevels();
-    });
+    loadUserGameData();
   }
 
   @override
@@ -186,6 +187,31 @@ class _GameTabState extends ConsumerState<GameTab> {
     _rewardedAd?.dispose();
     _interstitialAd?.dispose();
     super.dispose();
+  }
+
+  void loadUserGameData() async {
+    final response = await ref.read(gameProvider.notifier).loadGameData();
+
+    if (response.statusCode == 401) {
+      sessionExpired();
+      return;
+    }
+
+    fetchLevels();
+  }
+
+  void sessionExpired() {
+    AppDialogs.sessionExpired(
+      context,
+      dismissible: false,
+      secondaryText: 'Back',
+      onSecondary: () => {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => MainNavigation()),
+        ),
+      },
+    );
   }
 
   Future<void> fetchLevels() async {
@@ -198,8 +224,8 @@ class _GameTabState extends ConsumerState<GameTab> {
       final userGameData = ref.read(gameProvider);
 
       final response = await apiService.getGameLevels(
-        currentLevel: userGameData?.currentLevel ?? 0,
-        limit: 4,
+        currentLevel: userGameData?.currentLevel ?? 1,
+        limit: 10,
       );
 
       if (!mounted) return;
@@ -215,6 +241,9 @@ class _GameTabState extends ConsumerState<GameTab> {
         setState(() {
           gameState = app.AppState.error;
         });
+        if (allLevels.isNotEmpty) {
+          _initLevel();
+        }
       }
     } catch (e) {
       setState(() {
@@ -224,7 +253,6 @@ class _GameTabState extends ConsumerState<GameTab> {
   }
 
   void _initLevel() {
-    if (gameState != app.AppState.loaded) return;
     if (allLevels.isEmpty) return;
 
     final userGameData = ref.read(gameProvider);
@@ -284,39 +312,37 @@ class _GameTabState extends ConsumerState<GameTab> {
     }
   }
 
-  void _proceedToNextLevel(GameData userGameData, RankConfig rankConfig) {
-    if (gameState == app.AppState.loading) return;
-
+  void _proceedToNextLevel(GameData userGameData, RankConfig rankConfig) async {
     setState(() {
       gameState = app.AppState.loading;
     });
+    final response = await ref
+        .read(gameProvider.notifier)
+        .completedLevel(
+          rankConfig.rewardPerLevel,
+          userGameData.currentHearts - 1,
+        );
 
-    Future.delayed(const Duration(milliseconds: 600), () async {
-      if (!mounted) return;
+    if (response.statusCode == 401) {
+      sessionExpired();
+      return;
+    }
 
-      ref
-          .read(gameProvider.notifier)
-          .updateHearts(userGameData.currentHearts - 1);
-      ref.read(gameProvider.notifier).completedLevel(rankConfig.rewardPerLevel);
+    if (allLevels.isNotEmpty) {
+      setState(() {
+        allLevels.removeAt(0);
+        _hintedOffsets = [];
+      });
+    }
 
-      if (allLevels.isNotEmpty) {
-        setState(() {
-          allLevels.removeAt(0);
-          _hintedOffsets = [];
-        });
-      }
-
-      if (allLevels.length <= 3) {
-        await fetchLevels();
-        return;
-      }
-
+    if (allLevels.length <= 3) {
+      await fetchLevels();
+    } else {
       setState(() {
         gameState = app.AppState.loaded;
       });
-
       _initLevel();
-    });
+    }
   }
 
   void _handleHint(GameData userGameData, RankConfig rankConfig, bool isFree) {
@@ -335,7 +361,11 @@ class _GameTabState extends ConsumerState<GameTab> {
     }
   }
 
-  void _useHint(GameData userGameData, RankConfig rankConfig, int points) {
+  void _useHint(
+    GameData userGameData,
+    RankConfig rankConfig,
+    int points,
+  ) async {
     final level = allLevels.first;
 
     List<Offset> hiddenCoords = [];
@@ -374,7 +404,14 @@ class _GameTabState extends ConsumerState<GameTab> {
         _hintedOffsets.add(randomPoint);
       });
 
-      ref.read(gameProvider.notifier).useHint(points, randomPoint);
+      final response = await ref
+          .read(gameProvider.notifier)
+          .useHint(points, randomPoint);
+
+      if (response.statusCode == 401) {
+        sessionExpired();
+        return;
+      }
 
       // Check if any word became fully visible
       for (final item in level.grid) {
@@ -399,7 +436,13 @@ class _GameTabState extends ConsumerState<GameTab> {
         // Auto-add word if fully revealed by hints
         if (fullyVisible &&
             !userGameData.currentLevelWordsFound.contains(item.word)) {
-          ref.read(gameProvider.notifier).addFoundWord(item.word);
+          final response = await ref
+              .read(gameProvider.notifier)
+              .addFoundWord(item.word);
+          if (response.statusCode == 401) {
+            sessionExpired();
+            return;
+          }
         }
       }
 
@@ -443,11 +486,17 @@ class _GameTabState extends ConsumerState<GameTab> {
     GameLevel level,
     GameData userGameData,
     RankConfig rankConfig,
-  ) {
+  ) async {
     String word = _selectedIndices.map((i) => _shuffledLetters[i]).join("");
     if (level.grid.any((e) => e.word == word) &&
         !userGameData.currentLevelWordsFound.contains(word)) {
-      ref.read(gameProvider.notifier).addFoundWord(word);
+      final response = await ref.read(gameProvider.notifier).addFoundWord(word);
+
+      if (response.statusCode == 401) {
+        sessionExpired();
+        return;
+      }
+
       _checkLevelComplete(level, rankConfig);
     }
     setState(() {
@@ -581,17 +630,60 @@ class _GameTabState extends ConsumerState<GameTab> {
   Widget build(BuildContext context) {
     final userGameData = ref.watch(gameProvider);
     final config = ref.watch(gameConfigProvider);
-    final currentLevel = userGameData?.currentLevel ?? 1;
-    final rankConfig = config?.getRankByLevel(currentLevel);
 
-    if (gameState == app.AppState.loading && allLevels.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (allLevels.isEmpty || userGameData!.currentHearts == 0) {
+    if (gameState == app.AppState.loading) {
       return Scaffold(
         backgroundColor: CityCipherTheme.background,
-        appBar: _appBar(userGameData!),
+        appBar: _appBar(userGameData),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (userGameData == null || config == null) {
+      return Scaffold(
+        backgroundColor: CityCipherTheme.background,
+        appBar: _appBar(userGameData),
+        body: ErrorStateView(
+          onRetry: () async {
+            setState(() {
+              userState = app.AppState.loading;
+            });
+            await ref.read(gameConfigProvider.notifier).loadConfig();
+            final response = await ref
+                .read(gameProvider.notifier)
+                .loadGameData();
+
+            if (response.statusCode == 401) {
+              sessionExpired();
+              return;
+            }
+            setState(() {
+              userState = app.AppState.loaded;
+            });
+          },
+        ),
+      );
+    }
+
+    if (allLevels.isEmpty && gameState == app.AppState.error) {
+      return Scaffold(
+        backgroundColor: CityCipherTheme.background,
+        appBar: _appBar(userGameData),
+        body: ErrorStateView(
+          description:
+              "We couldn't load the levels right now.\nPlease try again.",
+          onRetry: fetchLevels,
+        ),
+      );
+    }
+
+    final currentLevel = userGameData.currentLevel;
+    final rankConfig = config.getRankByLevel(currentLevel);
+
+    if (allLevels.isEmpty || userGameData.currentHearts == 0) {
+      return Scaffold(
+        backgroundColor: CityCipherTheme.background,
+        appBar: _appBar(userGameData),
         body: Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
           child: Center(
@@ -759,14 +851,13 @@ class _GameTabState extends ConsumerState<GameTab> {
     );
   }
 
-  PreferredSizeWidget _appBar(GameData userGameData) {
+  PreferredSizeWidget _appBar(GameData? userGameData) {
     return AppBar(
       automaticallyImplyLeading: false,
       titleSpacing: 0,
       backgroundColor: CityCipherTheme.background,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      //toolbarHeight: 90,
       title: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 5),
         child: Row(
@@ -792,20 +883,20 @@ class _GameTabState extends ConsumerState<GameTab> {
                     _chip(
                       LucideIcons.zap,
                       CityCipherTheme.primary,
-                      userGameData.currentHearts.toString(),
+                      userGameData?.currentHearts.toString() ?? '0',
                     ),
                     const SizedBox(width: 6),
                     _chip(
                       LucideIcons.award,
                       CityCipherTheme.primary,
-                      "Level ${userGameData.currentLevel}",
+                      "Level ${userGameData?.currentLevel ?? 1}",
                     ),
                     const SizedBox(width: 6),
                     _chip(
                       LucideIcons.coins,
                       CityCipherTheme.primary,
                       format.NumberFormat.decimalPattern().format(
-                        userGameData.earnedPoints,
+                        userGameData?.earnedPoints ?? 0,
                       ),
                     ),
                   ],
