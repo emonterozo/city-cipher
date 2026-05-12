@@ -49,3 +49,44 @@ enum Rank {
     );
   }
 }
+
+enum UserRewardStatus {
+  active('active'),
+  used('used'),
+  expired('expired'),
+  unknown('UNKNOWN');
+
+  final String value;
+  const UserRewardStatus(this.value);
+
+  static UserRewardStatus fromString(String value) {
+    return UserRewardStatus.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => UserRewardStatus.unknown,
+    );
+  }
+
+  int get tabIndex {
+    switch (this) {
+      case UserRewardStatus.active:
+        return 0;
+      case UserRewardStatus.used:
+        return 1;
+      case UserRewardStatus.expired:
+        return 2;
+      case UserRewardStatus.unknown:
+        return 0;
+    }
+  }
+
+  static UserRewardStatus fromTabIndex(int index) {
+    switch (index) {
+      case 1:
+        return UserRewardStatus.used;
+      case 2:
+        return UserRewardStatus.expired;
+      default:
+        return UserRewardStatus.active;
+    }
+  }
+}

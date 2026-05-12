@@ -19,4 +19,8 @@ class Meta {
       totalPages: json['totalPages'] ?? 0,
     );
   }
+
+  factory Meta.empty() {
+    return Meta(page: 0, limit: 0, total: 0, totalPages: 0);
+  }
 }

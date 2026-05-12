@@ -28,6 +28,7 @@ class Reward {
   final String description;
   final int pointsCost;
   final int totalQuantity;
+  final int claimedQuantity;
   final int redeemedQuantity;
   final int perUserLimit;
   final int claimValidDays;
@@ -42,6 +43,7 @@ class Reward {
     required this.description,
     required this.pointsCost,
     required this.totalQuantity,
+    required this.claimedQuantity,
     required this.redeemedQuantity,
     required this.perUserLimit,
     required this.claimValidDays,
@@ -58,6 +60,7 @@ class Reward {
       description: json['description'] ?? '',
       pointsCost: json['points_cost'] ?? 0,
       totalQuantity: json['total_quantity'] ?? 0,
+      claimedQuantity: json['claimed_quantity'] ?? 0,
       redeemedQuantity: json['redeemed_quantity'] ?? 0,
       perUserLimit: json['per_user_limit'] ?? 0,
       claimValidDays: json['claim_valid_days'] ?? 0,
@@ -77,6 +80,8 @@ class Reward {
       'description': description,
       'points_cost': pointsCost,
       'total_quantity': totalQuantity,
+      'claimed_quantity': claimedQuantity,
+      'redeemed_quantity': redeemedQuantity,
       'per_user_limit': perUserLimit,
       'claim_valid_days': claimValidDays,
       'start_date': startDate.toIso8601String(),

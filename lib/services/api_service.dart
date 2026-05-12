@@ -46,6 +46,7 @@ class ApiService {
 
   Map<String, String> get _headers {
     final token = ref.read(authProvider).accessToken;
+    print(token);
     return {
       "Content-Type": "application/json",
       "Accept": "application/json",
@@ -368,5 +369,69 @@ class ApiService {
     final jsonData = jsonDecode(response.body);
 
     return ApiResponse.fromJson(jsonData);
+  }
+
+  Future<ApiResponse> claimedReward(String rewardId) async {
+    final url = Uri.parse("$baseUrl/api/rewards/$rewardId");
+
+    var response = await http.post(url, headers: _headers);
+
+    if (response.statusCode == 401) {
+      final newToken = await refreshToken();
+
+      if (newToken == null) {
+        return ApiResponse.sessionExpired();
+      }
+
+      response = await http.post(
+        url,
+        headers: {..._headers, "authorization": "Bearer $newToken"},
+      );
+    }
+
+    final jsonData = jsonDecode(response.body);
+
+    return ApiResponse.fromJson(jsonData);
+  }
+
+  Future<UserRewardResponse> getUserRewards({
+    int page = 1,
+    int limit = 10,
+    String fields = "title",
+    String sort = "sort_order",
+    String order = "asc",
+    UserRewardStatus status = UserRewardStatus.active,
+  }) async {
+    final queryParams = {
+      "page": page.toString(),
+      "limit": limit.toString(),
+      "fields": fields,
+      "sort": sort,
+      "order": order,
+      "status": status.value,
+    };
+
+    final uri = Uri.parse(
+      "$baseUrl/api/rewards/me",
+    ).replace(queryParameters: queryParams);
+
+    var response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode == 401) {
+      final newToken = await refreshToken();
+
+      if (newToken == null) {
+        return UserRewardResponse.sessionExpired();
+      }
+
+      response = await http.post(
+        uri,
+        headers: {..._headers, "authorization": "Bearer $newToken"},
+      );
+    }
+
+    final jsonData = jsonDecode(response.body);
+
+    return UserRewardResponse.fromJson(jsonData);
   }
 }

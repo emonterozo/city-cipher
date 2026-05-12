@@ -356,77 +356,75 @@ class _StoreDetailsScreenState extends ConsumerState<StoreDetailsScreen> {
           SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final reward = rewards[index];
-              return InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          RewardDetailsScreen(rewardId: reward.id),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16, left: 24, right: 24),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            RewardDetailsScreen(rewardId: reward.id),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: CityCipherTheme.border.withValues(alpha: 0.5),
+                        width: 1.5,
+                      ),
                     ),
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(
-                    bottom: 16,
-                    left: 24,
-                    right: 24,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: CityCipherTheme.border.withValues(alpha: 0.5),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(
-                          LucideIcons.ticketPercent,
-                          size: 45,
-                          color: CityCipherTheme.primary,
-                        ),
-                        SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                reward.title,
-                                style: TextStyle(
-                                  color: CityCipherTheme.foreground,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  fontFamily: "Poppins",
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                "${NumberFormat.decimalPattern().format(reward.pointsCost)} POINTS",
-                                style: TextStyle(
-                                  color: CityCipherTheme.primary,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                  fontFamily: "Poppins",
-                                ),
-                              ),
-                            ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Icon(
+                            LucideIcons.ticketPercent,
+                            size: 45,
+                            color: CityCipherTheme.primary,
                           ),
-                        ),
-                        Icon(
-                          LucideIcons.chevronRight,
-                          size: 25,
-                          color: CityCipherTheme.mutedForeground,
-                        ),
-                      ],
+                          SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  reward.title,
+                                  style: TextStyle(
+                                    color: CityCipherTheme.foreground,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    fontFamily: "Poppins",
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  "${NumberFormat.decimalPattern().format(reward.pointsCost)} POINTS",
+                                  style: TextStyle(
+                                    color: CityCipherTheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                    fontFamily: "Poppins",
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            LucideIcons.chevronRight,
+                            size: 25,
+                            color: CityCipherTheme.mutedForeground,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -810,7 +808,7 @@ class _BranchCardState extends State<BranchCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-               const SizedBox(width: 5,),
+                const SizedBox(width: 5),
                 Row(
                   children: branch.socials.map((s) {
                     const socialIcons = {

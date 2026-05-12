@@ -4,6 +4,7 @@ import 'package:city_cipher/screens/login_screen.dart';
 import 'package:city_cipher/shared/utils/app_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart' hide AppState;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'core/enums/app_enums.dart';
@@ -39,8 +40,13 @@ class MainNavigation extends ConsumerStatefulWidget {
 }
 
 class _MainNavigationState extends ConsumerState<MainNavigation> {
+  final GlobalKey<RewardsTabState> rewardsTabKey = GlobalKey<RewardsTabState>();
   int _currentTabIndex = 0;
-  late final List<Widget> _pages = [const HomeTab(), const RewardsTab()];
+  late final List<Widget> _pages = [
+    const HomeTab(),
+    RewardsTab(key: rewardsTabKey),
+  ];
+  
 
   AppState appState = AppState.loading;
 
@@ -48,11 +54,11 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     ref.read(gameConfigProvider.notifier).loadConfig();
   }
 
-  void loadUserGameState() async {
+  Future<void> loadUserGameState() async {
     final response = await ref.read(gameProvider.notifier).loadGameData();
+    if (!mounted) return;
     if (response.statusCode == 401) {
-      if (!mounted) return;
-      AppDialogs.sessionExpired(context);
+      AppDialogs.sessionExpired(context, ref: ref);
     }
   }
 
@@ -139,7 +145,13 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   }) {
     bool isSelected = _currentTabIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _currentTabIndex = index),
+      onTap: () {
+        setState(() => _currentTabIndex = index);
+
+        if (index == 1) {
+          rewardsTabKey.currentState?.fetchUserRewards();
+        }
+      },
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,

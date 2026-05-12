@@ -74,6 +74,7 @@ class _GameTabState extends ConsumerState<GameTab> {
         onAdFailedToLoad: (ad, error) {
           _bannerAd = null;
           Future.delayed(const Duration(seconds: 5), () {
+            if (!mounted) return;
             _loadBannerAd();
           });
         },
@@ -96,6 +97,7 @@ class _GameTabState extends ConsumerState<GameTab> {
           _rewardedAd = null;
 
           Future.delayed(const Duration(seconds: 5), () {
+            if (!mounted) return;
             _loadRewardedAd();
           });
         },
@@ -115,6 +117,7 @@ class _GameTabState extends ConsumerState<GameTab> {
           _interstitialAd = null;
 
           Future.delayed(const Duration(seconds: 5), () {
+            if (!mounted) return;
             _loadInterstitialAd();
           });
         },
@@ -203,13 +206,13 @@ class _GameTabState extends ConsumerState<GameTab> {
   void sessionExpired() {
     AppDialogs.sessionExpired(
       context,
-      dismissible: false,
-      secondaryText: 'Back',
-      onSecondary: () => {
+      ref: ref,
+      secondaryText: "Back",
+      onSecondary: () {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => MainNavigation()),
-        ),
+        );
       },
     );
   }

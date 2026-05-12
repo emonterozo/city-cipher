@@ -1,4 +1,8 @@
 import 'package:city_cipher/core/providers/auth_provider.dart';
+import 'package:city_cipher/core/providers/game_provider.dart';
+import 'package:city_cipher/main.dart';
+import 'package:city_cipher/shared/utils/app_dialog.dart';
+import 'package:city_cipher/shared/utils/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:city_cipher/core/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +27,7 @@ class RewardDetailsScreen extends ConsumerStatefulWidget {
 class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
   Reward? reward;
   AppState rewardState = AppState.loading;
+  AppState claimedState = AppState.initialize;
 
   Future<void> fetchRewardDetails() async {
     setState(() => rewardState = AppState.loading);
@@ -41,6 +46,47 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
       }
     } catch (e) {
       setState(() => rewardState = AppState.error);
+    }
+  }
+
+  Future<void> claimedReward() async {
+    setState(() => claimedState = AppState.loading);
+
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final response = await apiService.claimedReward(widget.rewardId);
+      if (!mounted) return;
+
+      if (response.statusCode == 401) {
+        AppDialogs.sessionExpired(
+          context,
+          ref: ref,
+          secondaryText: "Back",
+          onSecondary: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => MainNavigation()),
+            );
+          },
+        );
+        return;
+      }
+
+      if (response.success) {
+        setState(() {
+          claimedState = AppState.loaded;
+        });
+        fetchRewardDetails();
+      } else {
+        if (response.message == 'This reward is no longer available.') {
+          fetchRewardDetails();
+        }
+        setState(() => claimedState = AppState.error);
+      }
+      ToastHelper.show(context, message: response.message);
+    } catch (e) {
+      ToastHelper.show(context);
+      setState(() => claimedState = AppState.error);
     }
   }
 
@@ -163,9 +209,12 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
 
   Widget _buildRewardContent() {
     final isAuthenticated = ref.watch(authProvider).isAuthenticated;
-    final formattedEndDate = DateFormat(
-      'MMMM dd, yyyy',
-    ).format(reward!.endDate);
+    final userGameData = ref.watch(gameProvider);
+    final earnedPoints = userGameData?.earnedPoints ?? 0;
+    final r = reward;
+    if (r == null) return const SizedBox();
+
+    final formattedEndDate = DateFormat('MMMM dd, yyyy').format(r.endDate);
 
     return Stack(
       children: [
@@ -185,7 +234,7 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        reward!.store.name.toUpperCase(),
+                        r.store.name.toUpperCase(),
                         style: const TextStyle(
                           fontFamily: "Poppins",
                           fontSize: 14,
@@ -196,7 +245,7 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        reward!.title,
+                        r.title,
                         style: const TextStyle(
                           fontFamily: "Poppins",
                           fontSize: 28,
@@ -207,7 +256,7 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        reward!.description,
+                        r.description,
                         style: TextStyle(
                           fontSize: 16,
                           color: CityCipherTheme.mutedForeground,
@@ -225,9 +274,9 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      ...reward!.rules.map((rule) => _buildRuleItem(rule)),
+                      ...r.rules.map((rule) => _buildRuleItem(rule)),
                       _buildRuleDetailRow(
-                        "Use within ${reward!.claimValidDays} days after claiming or it will expire",
+                        "Use within ${r.claimValidDays} days after claiming or it will expire",
                       ),
                       _buildRuleDetailRow(
                         "Claim period will end on $formattedEndDate",
@@ -239,7 +288,9 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
             ),
           ),
         ),
-        isAuthenticated
+        isAuthenticated &&
+                earnedPoints >= r.pointsCost &&
+                r.claimedQuantity < r.totalQuantity
             ? Align(
                 alignment: Alignment.bottomCenter,
                 child: _buildClaimButton(),
@@ -250,16 +301,16 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
   }
 
   Widget _rewardCard() {
-    final int currentAvailed = reward?.redeemedQuantity ?? 0;
+    final int currentClaimed = reward?.claimedQuantity ?? 0;
     final int maxSlot = reward?.totalQuantity ?? 0;
     final String pointsLabel = NumberFormat.decimalPattern().format(
       reward?.pointsCost ?? 0,
     );
     const int totalSegments = 7;
 
-    double progress = (currentAvailed / maxSlot).clamp(0.0, 1.0);
+    double progress = (currentClaimed / maxSlot).clamp(0.0, 1.0);
 
-    String leftLabel = "Availed $currentAvailed";
+    String leftLabel = "Claimed $currentClaimed";
     String rightLabel = "Total $maxSlot";
 
     int filledSegments = (progress * totalSegments).round();
@@ -408,9 +459,7 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
       decoration: BoxDecoration(color: CityCipherTheme.background),
       child: SafeArea(
         child: ElevatedButton(
-          onPressed: () {
-            // Add your claim API call here
-          },
+          onPressed: claimedState == AppState.loading ? null : claimedReward,
           style: ElevatedButton.styleFrom(
             backgroundColor: CityCipherTheme.primary,
             minimumSize: const Size(double.infinity, 56),
@@ -418,15 +467,24 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          child: const Text(
-            "CLAIM REWARD",
-            style: TextStyle(
-              fontFamily: "Poppins",
-              color: CityCipherTheme.primaryForeground,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          child: claimedState == AppState.loading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: CityCipherTheme.primary,
+                  ),
+                )
+              : const Text(
+                  "CLAIM REWARD",
+                  style: TextStyle(
+                    fontFamily: "Poppins",
+                    color: CityCipherTheme.primaryForeground,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
       ),
     );
