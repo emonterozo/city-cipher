@@ -79,6 +79,10 @@ enum UserRewardStatus {
     }
   }
 
+  String get display {
+    return value[0].toUpperCase() + value.substring(1).toLowerCase();
+  }
+
   static UserRewardStatus fromTabIndex(int index) {
     switch (index) {
       case 1:

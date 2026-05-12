@@ -89,4 +89,22 @@ class Reward {
       'rules': rules.map((e) => e.toJson()).toList(),
     };
   }
+
+  factory Reward.empty() {
+    return Reward(
+      id: '',
+      store: Store.empty(),
+      title: '',
+      description: '',
+      pointsCost: 0,
+      totalQuantity: 0,
+      claimedQuantity: 0,
+      redeemedQuantity: 0,
+      perUserLimit: 0,
+      claimValidDays: 0,
+      startDate: DateTime.now(),
+      endDate: DateTime.now(),
+      rules: [],
+    );
+  }
 }

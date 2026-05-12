@@ -27,4 +27,15 @@ class UserReward {
       reward: Reward.fromJson(json['reward_id']),
     );
   }
+
+  factory UserReward.empty() {
+    return UserReward(
+      id: '',
+      status: '',
+      expiredAt: DateTime.now(),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      reward: Reward.empty(),
+    );
+  }
 }

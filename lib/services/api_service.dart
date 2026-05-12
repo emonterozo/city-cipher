@@ -412,7 +412,7 @@ class ApiService {
     };
 
     final uri = Uri.parse(
-      "$baseUrl/api/rewards/me",
+      "$baseUrl/api/me/rewards",
     ).replace(queryParameters: queryParams);
 
     var response = await http.get(uri, headers: _headers);
@@ -433,5 +433,35 @@ class ApiService {
     final jsonData = jsonDecode(response.body);
 
     return UserRewardResponse.fromJson(jsonData);
+  }
+
+  Future<UserRewardDetailsResponse> getUserRewardDetails({
+    required String id,
+    String fields = "",
+  }) async {
+    final queryParams = {"fields": fields};
+
+    final uri = Uri.parse(
+      "$baseUrl/api/me/rewards/$id",
+    ).replace(queryParameters: queryParams);
+
+    var response = await http.get(uri, headers: _headers);
+
+    if (response.statusCode == 401) {
+      final newToken = await refreshToken();
+
+      if (newToken == null) {
+        return UserRewardDetailsResponse.sessionExpired();
+      }
+
+      response = await http.post(
+        uri,
+        headers: {..._headers, "authorization": "Bearer $newToken"},
+      );
+    }
+
+    final jsonData = jsonDecode(response.body);
+
+    return UserRewardDetailsResponse.fromJson(jsonData);
   }
 }

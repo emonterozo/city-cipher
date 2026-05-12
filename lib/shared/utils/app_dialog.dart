@@ -22,7 +22,7 @@ class AppDialogs {
       builder: (_) => AppDialog(
         title: "Session Expired",
         message:
-            "Your session has expired. Please log in again to continue playing and save your progress.",
+            "Your session has expired. Please log in again to continue.",
         icon: LucideIcons.octagonAlert,
         iconColor: Colors.redAccent,
         primaryColor: Colors.redAccent,

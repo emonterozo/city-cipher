@@ -3,12 +3,14 @@ import 'package:city_cipher/core/providers/api_service_provider.dart';
 import 'package:city_cipher/core/providers/auth_provider.dart';
 import 'package:city_cipher/main.dart';
 import 'package:city_cipher/models/reward/user_reward_model.dart';
+import 'package:city_cipher/screens/user_reward_details_screen.dart';
 import 'package:city_cipher/shared/utils/app_dialog.dart';
 import 'package:city_cipher/shared/widgets/custom_app_bar.dart';
 import 'package:city_cipher/shared/widgets/reward_card_loading.dart';
 import 'package:city_cipher/shared/widgets/sliver_state_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../core/theme.dart';
 
@@ -236,7 +238,16 @@ class RewardsTabState extends ConsumerState<RewardsTab> {
                     right: 24,
                   ),
                   child: GestureDetector(
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserRewardDetailsScreen(
+                            userRewardId: userReward.id,
+                          ),
+                        ),
+                      );
+                    },
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
@@ -276,7 +287,11 @@ class RewardsTabState extends ConsumerState<RewardsTab> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    userReward.expiredAt.toString(),
+                                    status == UserRewardStatus.active
+                                        ? "Expires on ${DateFormat('MMM dd, yyyy').format(userReward.expiredAt!)}"
+                                        : status == UserRewardStatus.used
+                                        ? "Used on ${DateFormat('MMM dd, yyyy').format(userReward.updatedAt!)}"
+                                        : "Expired on ${DateFormat('MMM dd, yyyy').format(userReward.expiredAt!)}",
                                     style: TextStyle(
                                       color: CityCipherTheme.mutedForeground,
                                       fontWeight: FontWeight.w600,

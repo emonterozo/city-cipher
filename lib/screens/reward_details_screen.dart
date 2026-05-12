@@ -3,11 +3,12 @@ import 'package:city_cipher/core/providers/game_provider.dart';
 import 'package:city_cipher/main.dart';
 import 'package:city_cipher/shared/utils/app_dialog.dart';
 import 'package:city_cipher/shared/utils/toast.dart';
+import 'package:city_cipher/shared/widgets/reward_detail.dart';
+import 'package:city_cipher/shared/widgets/reward_detail_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:city_cipher/core/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shimmer/shimmer.dart';
 import '../core/enums/app_enums.dart';
 import '../core/providers/api_service_provider.dart';
@@ -129,73 +130,7 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Shimmer.fromColors(
-                    baseColor: const Color(0xFF1E293B),
-                    highlightColor: const Color(0xFF334155),
-                    child: Container(
-                      height: 25,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Shimmer.fromColors(
-                    baseColor: const Color(0xFF1E293B),
-                    highlightColor: const Color(0xFF334155),
-                    child: Container(
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Shimmer.fromColors(
-                    baseColor: const Color(0xFF1E293B),
-                    highlightColor: const Color(0xFF334155),
-                    child: Container(
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Shimmer.fromColors(
-                    baseColor: const Color(0xFF1E293B),
-                    highlightColor: const Color(0xFF334155),
-                    child: Container(
-                      height: 25,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ...List.generate(
-                    7,
-                    (_) => Shimmer.fromColors(
-                      baseColor: const Color(0xFF1E293B),
-                      highlightColor: const Color(0xFF334155),
-                      child: Container(
-                        height: 25,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        margin: EdgeInsets.only(bottom: 10),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: RewardDetailLoading(),
             ),
           ],
         );
@@ -214,8 +149,6 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
     final r = reward;
     if (r == null) return const SizedBox();
 
-    final formattedEndDate = DateFormat('MMMM dd, yyyy').format(r.endDate);
-
     return Stack(
       children: [
         RefreshIndicator(
@@ -230,59 +163,7 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
                 _rewardCard(),
                 Padding(
                   padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        r.store.name.toUpperCase(),
-                        style: const TextStyle(
-                          fontFamily: "Poppins",
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: CityCipherTheme.foreground,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        r.title,
-                        style: const TextStyle(
-                          fontFamily: "Poppins",
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: CityCipherTheme.secondary,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        r.description,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: CityCipherTheme.mutedForeground,
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      const Text(
-                        "Terms & Conditions",
-                        style: TextStyle(
-                          fontFamily: "Poppins",
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: CityCipherTheme.foreground,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...r.rules.map((rule) => _buildRuleItem(rule)),
-                      _buildRuleDetailRow(
-                        "Use within ${r.claimValidDays} days after claiming or it will expire",
-                      ),
-                      _buildRuleDetailRow(
-                        "Claim period will end on $formattedEndDate",
-                      ),
-                    ],
-                  ),
+                  child: RewardDetail(reward: r),
                 ),
               ],
             ),
@@ -410,45 +291,6 @@ class _RewardDetailsScreenState extends ConsumerState<RewardDetailsScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildRuleItem(RewardRule rule) {
-    final formattedValue = NumberFormat.decimalPattern().format(rule.value);
-    String text = "";
-    if (rule.type == RewardRuleType.minPurchase) {
-      text = "Minimum spend of ₱$formattedValue required";
-    }
-    if (rule.type == RewardRuleType.maxDiscount) {
-      text = "Maximum discount limited to ₱$formattedValue";
-    }
-
-    return _buildRuleDetailRow(text);
-  }
-
-  Widget _buildRuleDetailRow(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            LucideIcons.check,
-            size: 18,
-            color: CityCipherTheme.mutedForeground,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontFamily: "Poppins",
-                color: CityCipherTheme.mutedForeground,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

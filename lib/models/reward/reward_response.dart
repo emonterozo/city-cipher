@@ -1,3 +1,4 @@
+import 'package:city_cipher/models/reward/user_reward_details_model.dart';
 import 'package:city_cipher/models/reward/user_reward_model.dart';
 import 'package:city_cipher/services/api_service.dart';
 
@@ -74,6 +75,46 @@ class UserRewardResponse extends ApiResponse {
       message: "Session expired",
       meta: Meta.empty(),
       data: [],
+    );
+  }
+}
+
+class UserRewardDetailsResponse extends ApiResponse {
+  final UserRewardDetails data;
+
+  UserRewardDetailsResponse({
+    super.statusCode,
+    required super.success,
+    required super.message,
+    required this.data,
+  });
+
+  factory UserRewardDetailsResponse.fromJson(
+    Map<String, dynamic> json, {
+    int? statusCode,
+  }) {
+    final raw = Map<String, dynamic>.from(json['data'] ?? {});
+
+    final rewardJson = Map<String, dynamic>.from(raw['reward_id'] ?? {});
+
+    final storeJson = Map<String, dynamic>.from(rewardJson['store_id'] ?? {});
+
+    final mappedData = {...raw, 'reward': rewardJson, 'store': storeJson};
+
+    return UserRewardDetailsResponse(
+      statusCode: statusCode,
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      data: UserRewardDetails.fromJson(mappedData),
+    );
+  }
+
+  factory UserRewardDetailsResponse.sessionExpired() {
+    return UserRewardDetailsResponse(
+      statusCode: 401,
+      success: false,
+      message: "Session expired",
+      data: UserRewardDetails.empty(),
     );
   }
 }

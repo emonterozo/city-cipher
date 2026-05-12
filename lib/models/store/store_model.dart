@@ -113,4 +113,17 @@ class Store {
   Map<String, dynamic> toJson() {
     return {'_id': id, 'name': name};
   }
+
+  factory Store.empty() {
+    return Store(
+      id: '',
+      name: '',
+      category: '',
+      description: '',
+      logo: '',
+      images: [],
+      website: null,
+      branches: [],
+    );
+  }
 }
